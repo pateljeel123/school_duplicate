@@ -2,6 +2,7 @@ const supabaseModel = require("../Models/supabaseModel");
 
 module.exports.GET_HODS = async (req, res) => {
     const { department } = req.query;
+
     try {
         const { data, error } = await supabaseModel.getHODs(department);
 

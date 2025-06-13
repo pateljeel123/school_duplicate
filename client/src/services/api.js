@@ -193,6 +193,8 @@ export const userService = {
   getAllTeachers: async () => {
     try {
       const response = await adminApi.get("/api/trusty/getteachers");
+      console.log(response);
+      
       return response.data;
     } catch (error) {
       console.error("Error fetching teachers:", error);
@@ -204,6 +206,7 @@ export const userService = {
   getAllStudents: async () => {
     try {
       const response = await adminApi.get("/api/trusty/getstudents");
+      console.log(response)
       return response.data;
     } catch (error) {
       console.error("Error fetching students:", error);

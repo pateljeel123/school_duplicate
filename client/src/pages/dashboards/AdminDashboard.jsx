@@ -5,12 +5,12 @@ import { userService } from '../../services/api';
 const AdminDashboard = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   // State for users data
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState(null);
-  
+
   // State for user statistics
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
@@ -21,18 +21,18 @@ const AdminDashboard = () => {
     userRoleData: [],
     userActivityData: [],
   });
-  
+
   // State for system logs
   const [systemLogs, setSystemLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsError, setLogsError] = useState(null);
-  
+
   // State for search query
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-  
+
   // Fetch users data when component mounts
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,50 +40,53 @@ const AdminDashboard = () => {
       setUsersError(null);
       try {
         // Fetch all types of users
-        const studentsPromise = userService.getStudents();
-        const teachersPromise = userService.getTeachers();
-        const hodsPromise = userService.getHODs();
-        const adminsPromise = userService.getAdmins();
-        
+        const studentsPromise = userService.getAllStudents();
+        const teachersPromise = userService.getAllTeachers();
+        const hodsPromise = userService.getAllHODs();
+        // const adminsPromise = userService.getAdmins();
+
         const [studentsRes, teachersRes, hodsRes, adminsRes] = await Promise.allSettled([
           studentsPromise,
           teachersPromise,
           hodsPromise,
-          adminsPromise
+          // adminsPromise
         ]);
-        
+
         // Extract data or use empty arrays if request failed
-        const students = studentsRes.status === 'fulfilled' && studentsRes.value?.data ? studentsRes.value.data : [];
-        const teachers = teachersRes.status === 'fulfilled' && teachersRes.value?.data ? teachersRes.value.data : [];
-        const hods = hodsRes.status === 'fulfilled' && hodsRes.value?.data ? hodsRes.value.data : [];
-        const admins = adminsRes.status === 'fulfilled' && adminsRes.value?.data ? adminsRes.value.data : [];
-        
+        const students = studentsRes.status === 'fulfilled' && studentsRes.value?.studentsData ? studentsRes.value.studentsData : [];
+        const teachers = teachersRes.status === 'fulfilled' && teachersRes.value?.teachersData ? teachersRes.value.teachersData : [];
+        const hods = hodsRes.status === 'fulfilled' && hodsRes.value?.hodsData ? hodsRes.value.hodsData : [];
+        // const admins = adminsRes.status === 'fulfilled' && adminsRes.value?.data ? adminsRes.value.data : [];
+
         // Combine all users
         const allUsers = [
           ...students.map(s => ({ ...s, role: 'student' })),
           ...teachers.map(t => ({ ...t, role: 'teacher' })),
           ...hods.map(h => ({ ...h, role: 'hod' })),
-          ...admins.map(a => ({ ...a, role: 'admin' }))
+          // ...admins.map(a => ({ ...a, role: 'admin' }))
         ];
-        
+        console.log(allUsers)
         if (allUsers.length > 0) {
+
           setUsers(allUsers);
-          
+
           // Calculate user statistics
+
           const totalStudents = students.length;
           const totalTeachers = teachers.length;
           const totalHODs = hods.length;
-          const totalAdmins = admins.length;
-          const totalUsers = totalStudents + totalTeachers + totalHODs + totalAdmins;
-          
+          // const totalAdmins = admins.length;
+          const totalUsers = totalStudents + totalTeachers + totalHODs;
+
+
           // Create data for role distribution chart
           const userRoleData = [
             { name: 'Students', value: totalStudents },
             { name: 'Teachers', value: totalTeachers },
             { name: 'HODs', value: totalHODs },
-            { name: 'Admins', value: totalAdmins },
+            // { name: 'Admins', value: totalAdmins },
           ];
-          
+
           // Create mock data for user activity (in a real app, this would come from an API)
           const userActivityData = [
             { name: 'Jan', students: 65, teachers: 45, hods: 12 },
@@ -93,13 +96,13 @@ const AdminDashboard = () => {
             { name: 'May', students: 80, teachers: 58, hods: 16 },
             { name: 'Jun', students: 90, teachers: 60, hods: 18 },
           ];
-          
+
           setUserStats({
             totalUsers,
             totalStudents,
             totalTeachers,
             totalHODs,
-            totalAdmins,
+            // totalAdmins,
             userRoleData,
             userActivityData,
           });
@@ -109,21 +112,21 @@ const AdminDashboard = () => {
             { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
             { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'teacher', status: 'active', lastActive: '2023-06-15T09:45:00Z' },
             { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'hod', status: 'active', lastActive: '2023-06-14T16:20:00Z' },
-            { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
+            // { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
             { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
           ]);
-          
+
           setUserStats({
             totalUsers: 5,
             totalStudents: 2,
             totalTeachers: 1,
             totalHODs: 1,
-            totalAdmins: 1,
+            // totalAdmins: 1,
             userRoleData: [
               { name: 'Students', value: 2 },
               { name: 'Teachers', value: 1 },
               { name: 'HODs', value: 1 },
-              { name: 'Admins', value: 1 },
+              // { name: 'Admins', value: 1 },
             ],
             userActivityData: [
               { name: 'Jan', students: 65, teachers: 45, hods: 12 },
@@ -138,7 +141,7 @@ const AdminDashboard = () => {
       } catch (err) {
         console.error('Error fetching users data:', err);
         setUsersError('Failed to load users data. Using sample data instead.');
-        
+
         // Fallback to mock data
         setUsers([
           { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
@@ -147,18 +150,18 @@ const AdminDashboard = () => {
           { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
           { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
         ]);
-        
+
         setUserStats({
           totalUsers: 5,
           totalStudents: 2,
           totalTeachers: 1,
           totalHODs: 1,
-          totalAdmins: 1,
+          // totalAdmins: 1,
           userRoleData: [
             { name: 'Students', value: 2 },
             { name: 'Teachers', value: 1 },
             { name: 'HODs', value: 1 },
-            { name: 'Admins', value: 1 },
+            // { name: 'Admins', value: 1 },
           ],
           userActivityData: [
             { name: 'Jan', students: 65, teachers: 45, hods: 12 },
@@ -173,7 +176,7 @@ const AdminDashboard = () => {
         setLoadingUsers(false);
       }
     };
-    
+
     // Fetch system logs (mock data for now)
     const fetchSystemLogs = async () => {
       setLoadingLogs(true);
@@ -182,7 +185,7 @@ const AdminDashboard = () => {
         // In a real app, you would fetch logs from an API
         // const response = await logsService.getSystemLogs();
         // setSystemLogs(response.data);
-        
+
         // Using mock data for now
         setSystemLogs([
           { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
@@ -194,7 +197,7 @@ const AdminDashboard = () => {
       } catch (err) {
         console.error('Error fetching system logs:', err);
         setLogsError('Failed to load system logs. Using sample data instead.');
-        
+
         // Fallback to mock data
         setSystemLogs([
           { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
@@ -207,31 +210,31 @@ const AdminDashboard = () => {
         setLoadingLogs(false);
       }
     };
-    
+
     fetchUsers();
     fetchSystemLogs();
   }, []);
-  
+
   // Filter users based on search query
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.role?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString();
   };
-  
+
   // Get status color
   const getStatusColor = (status) => {
     if (status === 'active') return 'bg-green-100 text-green-800';
     if (status === 'inactive') return 'bg-red-100 text-red-800';
     return 'bg-gray-100 text-gray-800';
   };
-  
+
   // Get log type color
   const getLogTypeColor = (type) => {
     if (type === 'login') return 'bg-blue-100 text-blue-800';
@@ -240,52 +243,52 @@ const AdminDashboard = () => {
     if (type === 'error') return 'bg-red-100 text-red-800';
     return 'bg-gray-100 text-gray-800';
   };
-  
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Dashboard header */}
       <div className="bg-white shadow-sm p-4 border-b">
         <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
       </div>
-      
+
       {/* Tab navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
-              ? 'text-primary border-b-2 border-primary' 
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'users' 
-              ? 'text-primary border-b-2 border-primary' 
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'users'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
             Users
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
-              ? 'text-primary border-b-2 border-primary' 
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
             Analytics
           </button>
           <button
             onClick={() => setActiveTab('logs')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs' 
-              ? 'text-primary border-b-2 border-primary' 
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
             System Logs
           </button>
         </div>
       </div>
-      
+
       {/* Main content */}
       <div className="flex-grow p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
@@ -301,7 +304,7 @@ const AdminDashboard = () => {
                     <span>All registered users</span>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-sm font-medium text-gray-500 uppercase">Students</h3>
                   <p className="mt-2 text-3xl font-bold text-blue-600">{userStats.totalStudents}</p>
@@ -309,7 +312,7 @@ const AdminDashboard = () => {
                     <span>Registered students</span>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-sm font-medium text-gray-500 uppercase">Teachers</h3>
                   <p className="mt-2 text-3xl font-bold text-green-600">{userStats.totalTeachers}</p>
@@ -317,7 +320,7 @@ const AdminDashboard = () => {
                     <span>Registered teachers</span>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-sm font-medium text-gray-500 uppercase">HODs</h3>
                   <p className="mt-2 text-3xl font-bold text-purple-600">{userStats.totalHODs}</p>
@@ -326,7 +329,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* User Role Distribution */}
@@ -365,7 +368,7 @@ const AdminDashboard = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* User Activity */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity</h3>
@@ -395,13 +398,13 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Recent System Logs */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-6 border-b">
                   <h3 className="text-lg font-semibold text-gray-700">Recent System Logs</h3>
                 </div>
-                
+
                 <div className="overflow-x-auto">
                   {loadingLogs ? (
                     <div className="p-8 text-center">
@@ -451,7 +454,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-          
+
           {/* Users Tab */}
           {activeTab === 'users' && (
             <div className="space-y-6">
@@ -474,13 +477,13 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Users list */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-6 border-b">
                   <h3 className="text-lg font-semibold text-gray-700">Users</h3>
                 </div>
-                
+
                 <div className="overflow-x-auto">
                   {loadingUsers ? (
                     <div className="p-8 text-center">
@@ -515,7 +518,7 @@ const AdminDashboard = () => {
                                   {user.name ? user.name.charAt(0) : '?'}
                                 </div>
                                 <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{user.name || 'Unknown'}</div>
+                                  <div className="text-sm font-medium text-gray-900">{user.fullname || 'Unknown'}</div>
                                 </div>
                               </div>
                             </td>
@@ -546,7 +549,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-          
+
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
@@ -586,7 +589,7 @@ const AdminDashboard = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* User Activity */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity Trend</h3>
@@ -617,7 +620,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-          
+
           {/* Logs Tab */}
           {activeTab === 'logs' && (
             <div className="space-y-6">
@@ -626,7 +629,7 @@ const AdminDashboard = () => {
                 <div className="p-6 border-b">
                   <h3 className="text-lg font-semibold text-gray-700">System Logs</h3>
                 </div>
-                
+
                 <div className="overflow-x-auto">
                   {loadingLogs ? (
                     <div className="p-8 text-center">

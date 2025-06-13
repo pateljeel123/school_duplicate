@@ -10,6 +10,7 @@ exports.signUp = async (email, password) => {
 };
 
 exports.signIn = async (email, password) => {
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -143,7 +144,7 @@ exports.verifySecurityPin = async (role, pin) => {
 // HOD related functions
 exports.getHODs = async (department) => {
   try {
-    let query = supabase.from('hod');
+    let query = supabase.from('hod').select("*");
 
     if (department) {
       query = query.eq('department', department);
