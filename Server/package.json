@@ -1,11 +1,11 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "server": "nodemon index.js",
+    "server": "nodemon server.js",
     "next": "nodemon server.js",
-    "teacherserver": "nodemon teacherserver.js"
+    "teacherserver": "nodemon server.js"
   },
   "keywords": [],
   "author": "",

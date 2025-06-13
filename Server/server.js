@@ -185,6 +185,7 @@ app.get('/history', (req, res) => {
 app.post('/teacher-chat', async (req, res) => {
   try {
     const userMessage = req.body.message;
+ 
     
     // Add user message to history
     teacherChatHistory.push({
@@ -358,7 +359,7 @@ app.delete('/lesson-plans/:planId', (req, res) => {
 // Generate a lesson plan using Mistral AI
 app.post('/generate-lesson-plan', async (req, res) => {
   try {
-    const { templateType, topicName, duration } = req.body;
+    const { templateType, topicName, duration, language } = req.body;
     
     if (!templateType || !topicName || !duration) {
       return res.status(400).json({
@@ -369,6 +370,12 @@ app.post('/generate-lesson-plan', async (req, res) => {
     
     // Construct a prompt based on the template type and user's request for more detail
     let prompt = `Generate a detailed lesson plan for a ${duration}-minute lesson on "${topicName}" using the "${templateType}" teaching approach. `;
+    
+    // Add language preference if specified
+    if (language && language !== 'English') {
+      prompt += `Please generate the lesson plan in ${language}. `;
+    }
+    
     prompt += 'Make the lesson plan engaging by incorporating the following elements: ';
     prompt += '1. Facts and figures: Include 3-5 relevant statistics, data points, or interesting facts about the topic. ';
     prompt += '2. Storytelling: Include a short, engaging narrative or anecdote related to the topic that captures student interest. ';
@@ -427,7 +434,6 @@ app.post('/generate-lesson-plan', async (req, res) => {
     let parsedLessonPlan;
     try {
       parsedLessonPlan = JSON.parse(cleanedLessonPlan);
-      console.log('Parsed lesson plan:', parsedLessonPlan);
       
       // Send the parsed JSON object directly
       res.json({ success: true, lessonPlan: parsedLessonPlan, message: 'Lesson plan generated successfully' });

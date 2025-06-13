@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Base URLs for different servers
-const MAIN_API_URL = 'http://localhost:3001';
-const TEACHER_API_URL = 'http://localhost:3002';
+const MAIN_API_URL = 'http://localhost:5000';
+const TEACHER_API_URL = 'http://localhost:5000';
 const ADMIN_API_URL = 'http://localhost:5000';
 
 // Create axios instances for different servers

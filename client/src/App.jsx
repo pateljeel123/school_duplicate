@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 
 // Pages
@@ -36,17 +36,29 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
-  // Mock authentication state (would be replaced with actual auth logic)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userRole, setUserRole] = useState(null) // 'student', 'teacher', 'hod', 'admin'
+  // Use localStorage to persist authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const storedAuth = localStorage.getItem('isAuthenticated');
+    return storedAuth === 'true';
+  })
+  
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem('userRole') || null;
+  })
 
-  // Mock login function
+  // Update localStorage when auth state changes
+  useEffect(() => {
+    localStorage.setItem('isAuthenticated', isAuthenticated);
+    localStorage.setItem('userRole', userRole || '');
+  }, [isAuthenticated, userRole]);
+
+  // Login function
   const handleLogin = (role) => {
     setIsAuthenticated(true)
     setUserRole(role)
   }
 
-  // Mock logout function
+  // Logout function
   const handleLogout = () => {
     setIsAuthenticated(false)
     setUserRole(null)
