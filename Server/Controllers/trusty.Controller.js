@@ -1,14 +1,9 @@
-const supabase = require("../Supabase/supabaseServer");
+const supabaseModel = require("../Models/supabaseModel");
 
 module.exports.GETDOCTORS = async (req, res) => {
     const { specialization } = req.query;
     try {
-        let query = supabase.from('doctors').select('*').eq('role', 'Doctor')
-
-        if (specialization) {
-            query = query.eq('specialization', specialization);
-        }
-        const { data, error } = await query;
+        const { data, error } = await supabaseModel.getDoctors(specialization);
 
         if (error) {
             return res.status(500).json({ error: "Database error", details: error.message });
@@ -28,11 +23,7 @@ module.exports.UpdateDoctors = async (req, res) => {
     }
 
     try {
-        const { data, error } = await supabase
-            .from('doctors')
-            .update(updateData)
-            .eq('id', id)
-            .select();
+        const { data, error } = await supabaseModel.updateDoctor(id, updateData);
 
         if (error) {
             return res.status(500).json({ message: "Database error", error: error.message });
@@ -51,31 +42,12 @@ module.exports.DeleteDoctors = async (req, res) => {
     }
 
     try {
-        // Step 1: Delete from doctors table first
-        const { error: dbError } = await supabase
-            .from('doctors')
-            .delete()
-            .eq('id', id);
+        const { error } = await supabaseModel.deleteDoctor(id);
 
-        if (dbError) {
+        if (error) {
             return res.status(500).json({
-                message: "Database error in deleting doctor record",
-                error: dbError.message
-            });
-        }
-
-        // Step 2: Delete auth user (using service role key)
-        const { error: authError } = await supabase.auth.admin.deleteUser(id);
-
-        if (authError) {
-            // Rollback suggestion if auth fails but DB succeeded
-            await supabase
-                .from('doctors')
-                .insert({ id: id }); // Re-insert with same ID (simplified example)
-
-            return res.status(500).json({
-                message: "Auth deletion failed - rolled back DB",
-                error: authError.message
+                message: "Error deleting doctor",
+                error: error.message
             });
         }
 
@@ -95,12 +67,7 @@ module.exports.DeleteDoctors = async (req, res) => {
 module.exports.GET_HODS = async (req, res) => {
     const { department } = req.query;
     try {
-        let query = supabase.from('doctors').select('*').eq('role', 'HOD');
-
-        if (department) {
-            query = query.eq('department', department);
-        }
-        const { data, error } = await query;
+        const { data, error } = await supabaseModel.getHODs(department);
 
         if (error) {
             return res.status(500).json({ error: "Database error", details: error.message });
@@ -121,29 +88,12 @@ module.exports.UPDATE_HOD = async (req, res) => {
     }
 
     try {
-        // First verify this is actually an HOD
-        const { data: existingHod, error: fetchError } = await supabase
-            .from('doctors')
-            .select('role')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) {
-            return res.status(500).json({ message: "Database error", error: fetchError.message });
-        }
-
-        if (!existingHod || existingHod.role !== 'HOD') {
-            return res.status(404).json({ message: "HOD not found with this ID" });
-        }
-
-        // Now perform the update
-        const { data, error } = await supabase
-            .from('doctors')
-            .update(updateData)
-            .eq('id', id)
-            .select();
+        const { data, error } = await supabaseModel.updateHOD(id, updateData);
 
         if (error) {
+            if (error.message === "HOD not found with this ID") {
+                return res.status(404).json({ message: error.message });
+            }
             return res.status(500).json({ message: "Database error", error: error.message });
         }
 
@@ -164,28 +114,12 @@ module.exports.DELETE_HOD = async (req, res) => {
     }
 
     try {
-        // First verify this is actually an HOD
-        const { data: existingHod, error: fetchError } = await supabase
-            .from('doctors')
-            .select('role')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) {
-            return res.status(500).json({ message: "Database error", error: fetchError.message });
-        }
-
-        if (!existingHod || existingHod.role !== 'HOD') {
-            return res.status(404).json({ message: "HOD not found with this ID" });
-        }
-
-        // Now perform the deletion
-        const { error } = await supabase
-            .from('doctors')
-            .delete()
-            .eq('id', id);
+        const { error } = await supabaseModel.deleteHOD(id);
 
         if (error) {
+            if (error.message === "HOD not found with this ID") {
+                return res.status(404).json({ message: error.message });
+            }
             return res.status(500).json({ message: "Database error", error: error.message });
         }
 

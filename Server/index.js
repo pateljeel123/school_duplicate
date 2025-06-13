@@ -9,12 +9,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+// Import routes
+const authRoutes = require('./Routes/auth.routes');
+
 // Multer config: Store uploaded files in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/auth', authRoutes);
 
 // =================== Analyze X-ray (base64) ===================
 app.post('/api/analyze-xray', upload.single('image'), async (req, res) => {

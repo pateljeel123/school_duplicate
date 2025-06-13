@@ -1,81 +1,246 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { userService } from '../../services/api';
 
 const AdminDashboard = () => {
   // State for active tab
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'users', 'logs'
+  const [activeTab, setActiveTab] = useState('overview');
   
-  // Mock user data
-  const userData = [
-    { id: 1, name: 'John Smith', email: 'john.smith@example.com', role: 'student', status: 'active', lastLogin: '2 hours ago' },
-    { id: 2, name: 'Emily Johnson', email: 'emily.j@example.com', role: 'student', status: 'active', lastLogin: '1 day ago' },
-    { id: 3, name: 'Dr. Robert Johnson', email: 'robert.j@example.com', role: 'teacher', status: 'active', lastLogin: '10 minutes ago' },
-    { id: 4, name: 'Prof. Amanda Lee', email: 'amanda.lee@example.com', role: 'teacher', status: 'active', lastLogin: '2 hours ago' },
-    { id: 5, name: 'Dr. Thomas Wilson', email: 'thomas.w@example.com', role: 'teacher', status: 'inactive', lastLogin: '2 days ago' },
-    { id: 6, name: 'Michael Brown', email: 'michael.b@example.com', role: 'student', status: 'active', lastLogin: '5 minutes ago' },
-    { id: 7, name: 'Sarah Davis', email: 'sarah.d@example.com', role: 'student', status: 'inactive', lastLogin: '3 days ago' },
-    { id: 8, name: 'Prof. James Davis', email: 'james.d@example.com', role: 'hod', status: 'active', lastLogin: '1 hour ago' },
-    { id: 9, name: 'Lisa Wilson', email: 'lisa.w@example.com', role: 'hod', status: 'active', lastLogin: '4 hours ago' },
-    { id: 10, name: 'David Chen', email: 'david.c@example.com', role: 'admin', status: 'active', lastLogin: '30 minutes ago' },
-  ];
-
-  // Mock system logs
-  const systemLogs = [
-    { id: 1, user: 'John Smith', action: 'Login', timestamp: '2023-06-09 14:32:45', details: 'Successful login from 192.168.1.105' },
-    { id: 2, user: 'Dr. Robert Johnson', action: 'Content Update', timestamp: '2023-06-09 13:15:22', details: 'Updated course materials for CS101' },
-    { id: 3, user: 'Admin', action: 'User Created', timestamp: '2023-06-09 11:45:10', details: 'Created new user account for Sarah Davis' },
-    { id: 4, user: 'Emily Johnson', action: 'Chat Interaction', timestamp: '2023-06-09 10:22:33', details: 'Sent 15 messages to AI assistant' },
-    { id: 5, user: 'Prof. Amanda Lee', action: 'Report Generated', timestamp: '2023-06-09 09:17:05', details: 'Generated student performance report' },
-    { id: 6, user: 'System', action: 'Backup', timestamp: '2023-06-09 03:00:00', details: 'Automated system backup completed' },
-    { id: 7, user: 'Michael Brown', action: 'Login Failed', timestamp: '2023-06-08 22:45:12', details: 'Failed login attempt from 203.0.113.42' },
-    { id: 8, user: 'Prof. James Davis', action: 'Role Change', timestamp: '2023-06-08 16:30:45', details: 'Changed user role from teacher to HOD' },
-  ];
-
-  // Chart data
-  const userRoleData = [
-    { name: 'Students', value: userData.filter(user => user.role === 'student').length },
-    { name: 'Teachers', value: userData.filter(user => user.role === 'teacher').length },
-    { name: 'HODs', value: userData.filter(user => user.role === 'hod').length },
-    { name: 'Admins', value: userData.filter(user => user.role === 'admin').length },
-  ];
-
-  const activityData = [
-    { name: 'Mon', logins: 45, messages: 30 },
-    { name: 'Tue', logins: 52, messages: 42 },
-    { name: 'Wed', logins: 48, messages: 35 },
-    { name: 'Thu', logins: 61, messages: 55 },
-    { name: 'Fri', logins: 55, messages: 40 },
-    { name: 'Sat', logins: 28, messages: 22 },
-    { name: 'Sun', logins: 25, messages: 18 },
-  ];
-
-  const COLORS = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D'];
-
-  // State for search and filter
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-
-  // Filter users based on search, role, and status
-  const filteredUsers = userData.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
-    const matchesStatus = statusFilter === 'all' ||
-                         (statusFilter === 'active' && user.status === 'active') ||
-                         (statusFilter === 'inactive' && user.status === 'inactive');
-    
-    return matchesSearch && matchesRole && matchesStatus;
+  // State for users data
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  
+  // State for user statistics
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalHODs: 0,
+    totalAdmins: 0,
+    userRoleData: [],
+    userActivityData: [],
   });
-
-  // Handle role change
-  const handleRoleChange = (userId, newRole) => {
-    // In a real app, this would call an API to update the user's role
-    console.log(`Changing user ${userId} role to ${newRole}`);
+  
+  // State for system logs
+  const [systemLogs, setSystemLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState(null);
+  
+  // State for search query
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Colors for charts
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  
+  // Fetch users data when component mounts
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      setUsersError(null);
+      try {
+        // Fetch all types of users
+        const studentsPromise = userService.getStudents();
+        const teachersPromise = userService.getTeachers();
+        const hodsPromise = userService.getHODs();
+        const adminsPromise = userService.getAdmins();
+        
+        const [studentsRes, teachersRes, hodsRes, adminsRes] = await Promise.allSettled([
+          studentsPromise,
+          teachersPromise,
+          hodsPromise,
+          adminsPromise
+        ]);
+        
+        // Extract data or use empty arrays if request failed
+        const students = studentsRes.status === 'fulfilled' && studentsRes.value?.data ? studentsRes.value.data : [];
+        const teachers = teachersRes.status === 'fulfilled' && teachersRes.value?.data ? teachersRes.value.data : [];
+        const hods = hodsRes.status === 'fulfilled' && hodsRes.value?.data ? hodsRes.value.data : [];
+        const admins = adminsRes.status === 'fulfilled' && adminsRes.value?.data ? adminsRes.value.data : [];
+        
+        // Combine all users
+        const allUsers = [
+          ...students.map(s => ({ ...s, role: 'student' })),
+          ...teachers.map(t => ({ ...t, role: 'teacher' })),
+          ...hods.map(h => ({ ...h, role: 'hod' })),
+          ...admins.map(a => ({ ...a, role: 'admin' }))
+        ];
+        
+        if (allUsers.length > 0) {
+          setUsers(allUsers);
+          
+          // Calculate user statistics
+          const totalStudents = students.length;
+          const totalTeachers = teachers.length;
+          const totalHODs = hods.length;
+          const totalAdmins = admins.length;
+          const totalUsers = totalStudents + totalTeachers + totalHODs + totalAdmins;
+          
+          // Create data for role distribution chart
+          const userRoleData = [
+            { name: 'Students', value: totalStudents },
+            { name: 'Teachers', value: totalTeachers },
+            { name: 'HODs', value: totalHODs },
+            { name: 'Admins', value: totalAdmins },
+          ];
+          
+          // Create mock data for user activity (in a real app, this would come from an API)
+          const userActivityData = [
+            { name: 'Jan', students: 65, teachers: 45, hods: 12 },
+            { name: 'Feb', students: 75, teachers: 48, hods: 14 },
+            { name: 'Mar', students: 85, teachers: 52, hods: 15 },
+            { name: 'Apr', students: 70, teachers: 55, hods: 13 },
+            { name: 'May', students: 80, teachers: 58, hods: 16 },
+            { name: 'Jun', students: 90, teachers: 60, hods: 18 },
+          ];
+          
+          setUserStats({
+            totalUsers,
+            totalStudents,
+            totalTeachers,
+            totalHODs,
+            totalAdmins,
+            userRoleData,
+            userActivityData,
+          });
+        } else {
+          // Fallback to mock data if no users were fetched
+          setUsers([
+            { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
+            { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'teacher', status: 'active', lastActive: '2023-06-15T09:45:00Z' },
+            { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'hod', status: 'active', lastActive: '2023-06-14T16:20:00Z' },
+            { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
+            { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
+          ]);
+          
+          setUserStats({
+            totalUsers: 5,
+            totalStudents: 2,
+            totalTeachers: 1,
+            totalHODs: 1,
+            totalAdmins: 1,
+            userRoleData: [
+              { name: 'Students', value: 2 },
+              { name: 'Teachers', value: 1 },
+              { name: 'HODs', value: 1 },
+              { name: 'Admins', value: 1 },
+            ],
+            userActivityData: [
+              { name: 'Jan', students: 65, teachers: 45, hods: 12 },
+              { name: 'Feb', students: 75, teachers: 48, hods: 14 },
+              { name: 'Mar', students: 85, teachers: 52, hods: 15 },
+              { name: 'Apr', students: 70, teachers: 55, hods: 13 },
+              { name: 'May', students: 80, teachers: 58, hods: 16 },
+              { name: 'Jun', students: 90, teachers: 60, hods: 18 },
+            ],
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching users data:', err);
+        setUsersError('Failed to load users data. Using sample data instead.');
+        
+        // Fallback to mock data
+        setUsers([
+          { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
+          { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'teacher', status: 'active', lastActive: '2023-06-15T09:45:00Z' },
+          { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'hod', status: 'active', lastActive: '2023-06-14T16:20:00Z' },
+          { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
+          { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
+        ]);
+        
+        setUserStats({
+          totalUsers: 5,
+          totalStudents: 2,
+          totalTeachers: 1,
+          totalHODs: 1,
+          totalAdmins: 1,
+          userRoleData: [
+            { name: 'Students', value: 2 },
+            { name: 'Teachers', value: 1 },
+            { name: 'HODs', value: 1 },
+            { name: 'Admins', value: 1 },
+          ],
+          userActivityData: [
+            { name: 'Jan', students: 65, teachers: 45, hods: 12 },
+            { name: 'Feb', students: 75, teachers: 48, hods: 14 },
+            { name: 'Mar', students: 85, teachers: 52, hods: 15 },
+            { name: 'Apr', students: 70, teachers: 55, hods: 13 },
+            { name: 'May', students: 80, teachers: 58, hods: 16 },
+            { name: 'Jun', students: 90, teachers: 60, hods: 18 },
+          ],
+        });
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    // Fetch system logs (mock data for now)
+    const fetchSystemLogs = async () => {
+      setLoadingLogs(true);
+      setLogsError(null);
+      try {
+        // In a real app, you would fetch logs from an API
+        // const response = await logsService.getSystemLogs();
+        // setSystemLogs(response.data);
+        
+        // Using mock data for now
+        setSystemLogs([
+          { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
+          { id: 2, type: 'update', user: 'Emily Davis', timestamp: '2023-06-15T11:15:00Z', details: 'Updated system settings' },
+          { id: 3, type: 'create', user: 'Emily Davis', timestamp: '2023-06-15T11:20:00Z', details: 'Created new teacher account' },
+          { id: 4, type: 'login', user: 'Jane Smith', timestamp: '2023-06-15T09:45:00Z', details: 'Teacher login successful' },
+          { id: 5, type: 'error', user: 'System', timestamp: '2023-06-15T08:30:00Z', details: 'Database backup failed' },
+        ]);
+      } catch (err) {
+        console.error('Error fetching system logs:', err);
+        setLogsError('Failed to load system logs. Using sample data instead.');
+        
+        // Fallback to mock data
+        setSystemLogs([
+          { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
+          { id: 2, type: 'update', user: 'Emily Davis', timestamp: '2023-06-15T11:15:00Z', details: 'Updated system settings' },
+          { id: 3, type: 'create', user: 'Emily Davis', timestamp: '2023-06-15T11:20:00Z', details: 'Created new teacher account' },
+          { id: 4, type: 'login', user: 'Jane Smith', timestamp: '2023-06-15T09:45:00Z', details: 'Teacher login successful' },
+          { id: 5, type: 'error', user: 'System', timestamp: '2023-06-15T08:30:00Z', details: 'Database backup failed' },
+        ]);
+      } finally {
+        setLoadingLogs(false);
+      }
+    };
+    
+    fetchUsers();
+    fetchSystemLogs();
+  }, []);
+  
+  // Filter users based on search query
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
   };
-
+  
+  // Get status color
+  const getStatusColor = (status) => {
+    if (status === 'active') return 'bg-green-100 text-green-800';
+    if (status === 'inactive') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+  
+  // Get log type color
+  const getLogTypeColor = (type) => {
+    if (type === 'login') return 'bg-blue-100 text-blue-800';
+    if (type === 'update') return 'bg-yellow-100 text-yellow-800';
+    if (type === 'create') return 'bg-green-100 text-green-800';
+    if (type === 'error') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+  
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Dashboard header */}
@@ -100,7 +265,15 @@ const AdminDashboard = () => {
               ? 'text-primary border-b-2 border-primary' 
               : 'text-gray-500 hover:text-primary'}`}
           >
-            User Management
+            Users
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
+              ? 'text-primary border-b-2 border-primary' 
+              : 'text-gray-500 hover:text-primary'}`}
+          >
+            Analytics
           </button>
           <button
             onClick={() => setActiveTab('logs')}
@@ -114,55 +287,295 @@ const AdminDashboard = () => {
       </div>
       
       {/* Main content */}
-      <div className="flex-grow p-4">
+      <div className="flex-grow p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Summary cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Users</h3>
-                  <p className="text-3xl font-bold text-primary">{userData.length}</p>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Total Users</h3>
+                  <p className="mt-2 text-3xl font-bold text-primary">{userStats.totalUsers}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>All registered users</span>
+                  </div>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Active Users</h3>
-                  <p className="text-3xl font-bold text-green-500">
-                    {userData.filter(user => user.status === 'active').length}
-                  </p>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Students</h3>
+                  <p className="mt-2 text-3xl font-bold text-blue-600">{userStats.totalStudents}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Registered students</span>
+                  </div>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Messages Today</h3>
-                  <p className="text-3xl font-bold text-primary">152</p>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Teachers</h3>
+                  <p className="mt-2 text-3xl font-bold text-green-600">{userStats.totalTeachers}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Registered teachers</span>
+                  </div>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">System Status</h3>
-                  <p className="text-xl font-semibold text-green-500">All Systems Operational</p>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">HODs</h3>
+                  <p className="mt-2 text-3xl font-bold text-purple-600">{userStats.totalHODs}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Department heads</span>
+                  </div>
                 </div>
               </div>
               
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* User distribution chart */}
+                {/* User Role Distribution */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">User Distribution</h3>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">User Role Distribution</h3>
                   <div className="h-64">
+                    {loadingUsers ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
+                      </div>
+                    ) : usersError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{usersError}</p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={userStats.userRoleData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {userStats.userRoleData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+                
+                {/* User Activity */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity</h3>
+                  <div className="h-64">
+                    {loadingUsers ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
+                      </div>
+                    ) : usersError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{usersError}</p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={userStats.userActivityData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="students" fill="#0088FE" name="Students" />
+                          <Bar dataKey="teachers" fill="#00C49F" name="Teachers" />
+                          <Bar dataKey="hods" fill="#FFBB28" name="HODs" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent System Logs */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">Recent System Logs</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loadingLogs ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading system logs...</p>
+                    </div>
+                  ) : logsError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{logsError}</p>
+                    </div>
+                  ) : systemLogs.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No system logs found.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {systemLogs.slice(0, 5).map((log) => (
+                          <tr key={log.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogTypeColor(log.type)}`}>
+                                {log.type.charAt(0).toUpperCase() + log.type.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{log.user}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(log.timestamp)}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">{log.details}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Users Tab */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              {/* Search and filters */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-grow">
+                    <input
+                      type="text"
+                      placeholder="Search users by name, email, or role..."
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
+                      Add New User
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Users list */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">Users</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loadingUsers ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading users data...</p>
+                    </div>
+                  ) : usersError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{usersError}</p>
+                    </div>
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No users found matching your search criteria.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredUsers.map((user) => (
+                          <tr key={user.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                                  {user.name ? user.name.charAt(0) : '?'}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{user.name || 'Unknown'}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{user.email || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900 capitalize">{user.role || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+                                {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Unknown'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(user.lastActive)}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button className="text-primary hover:text-primary-dark mr-3">Edit</button>
+                              <button className="text-red-600 hover:text-red-900">Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              {/* User Role Distribution */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Role Distribution</h3>
+                <div className="h-80">
+                  {loadingUsers ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chart data...</p>
+                    </div>
+                  ) : usersError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{usersError}</p>
+                    </div>
+                  ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={userRoleData}
+                          data={userStats.userRoleData}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={80}
+                          outerRadius={120}
                           fill="#8884d8"
                           dataKey="value"
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         >
-                          {userRoleData.map((entry, index) => (
+                          {userStats.userRoleData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -170,195 +583,96 @@ const AdminDashboard = () => {
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
-                  </div>
+                  )}
                 </div>
-                
-                {/* Activity chart */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Weekly Activity</h3>
-                  <div className="h-64">
+              </div>
+              
+              {/* User Activity */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity Trend</h3>
+                <div className="h-80">
+                  {loadingUsers ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chart data...</p>
+                    </div>
+                  ) : usersError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{usersError}</p>
+                    </div>
+                  ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={activityData}>
+                      <BarChart data={userStats.userActivityData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="logins" fill="#2E86AB" name="Logins" />
-                        <Bar dataKey="messages" fill="#A23B72" name="Messages" />
+                        <Bar dataKey="students" fill="#0088FE" name="Students" />
+                        <Bar dataKey="teachers" fill="#00C49F" name="Teachers" />
+                        <Bar dataKey="hods" fill="#FFBB28" name="HODs" />
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
           
-          {/* User Management Tab */}
-          {activeTab === 'users' && (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Management</h3>
-                
-                {/* Search and filters */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search users..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-full lg:w-64"
-                    />
-                    <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {/* Role filter */}
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="student">Students</option>
-                      <option value="teacher">Teachers</option>
-                      <option value="hod">HODs</option>
-                      <option value="admin">Admins</option>
-                    </select>
-                    
-                    {/* Status filter */}
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => setStatusFilter('all')}
-                        className={`px-4 py-2 rounded-md ${statusFilter === 'all' 
-                          ? 'bg-primary text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                      >
-                        All
-                      </button>
-                      <button 
-                        onClick={() => setStatusFilter('active')}
-                        className={`px-4 py-2 rounded-md ${statusFilter === 'active' 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                      >
-                        Active
-                      </button>
-                      <button 
-                        onClick={() => setStatusFilter('inactive')}
-                        className={`px-4 py-2 rounded-md ${statusFilter === 'inactive' 
-                          ? 'bg-red-500 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                      >
-                        Inactive
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* User table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                        <tr key={user.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-dark">{user.name}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-dark capitalize">{user.role}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {user.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {user.lastLogin}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <select
-                              className="mr-2 px-2 py-1 border rounded text-sm"
-                              value={user.role}
-                              onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                            >
-                              <option value="student">Student</option>
-                              <option value="teacher">Teacher</option>
-                              <option value="hod">HOD</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                            <button className="text-primary hover:text-primary-dark mr-2">Edit</button>
-                            <button className="text-red-600 hover:text-red-800">Delete</button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                          No users found matching your criteria
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          
-          {/* System Logs Tab */}
+          {/* Logs Tab */}
           {activeTab === 'logs' && (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-700">System Logs</h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {systemLogs.map((log) => (
-                      <tr key={log.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {log.timestamp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{log.user}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-dark">{log.action}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500">{log.details}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="space-y-6">
+              {/* System Logs */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">System Logs</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loadingLogs ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading system logs...</p>
+                    </div>
+                  ) : logsError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{logsError}</p>
+                    </div>
+                  ) : systemLogs.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No system logs found.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {systemLogs.map((log) => (
+                          <tr key={log.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogTypeColor(log.type)}`}>
+                                {log.type.charAt(0).toUpperCase() + log.type.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{log.user}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(log.timestamp)}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">{log.details}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </div>
           )}

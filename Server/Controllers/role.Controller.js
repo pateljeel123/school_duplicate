@@ -1,15 +1,10 @@
-const supabase = require("../Supabase/supabaseServer");
+const supabaseModel = require("../Models/supabaseModel");
 
 module.exports.HOD = async (req, res) => {
     const { specialization } = req.query;
 
     try {
-        let query = supabase.from('doctors').select('*').eq('role','Doctor')
-
-        if (specialization) {
-            query = query.eq('specialization', specialization);
-        }
-        const { data, error } = await query;
+        const { data, error } = await supabaseModel.getDoctors(specialization);
 
         if (error) {
             console.log(error)

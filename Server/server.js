@@ -6,20 +6,45 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Import routes
+const authRoutes = require('./Routes/auth.routes');
+
+// Initialize Express app
 const app = express();
-app.use(cors());
-app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
-const PORT = 3000;
-let history = [];
+// Define ports
+const PORT = process.env.PORT || 5000;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MISTRAL_API_URL = 'https://api.mistral.ai/v1/chat/completions';
 
-const storage = multer.diskStorage({
+// Multer config for file uploads with disk storage
+const diskStorage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) =>
     cb(null, Date.now() + path.extname(file.originalname)),
 });
-const upload = multer({ storage });
+const uploadToDisk = multer({ storage: diskStorage });
+
+// Multer config for memory storage (for base64 processing)
+const memoryStorage = multer.memoryStorage();
+const uploadToMemory = multer({ storage: memoryStorage });
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
+
+// Routes
+app.use('/api/auth', authRoutes);
+
+// In-memory storage
+let studentChatHistory = [];
+let teacherChatHistory = [];
+let lessonPlans = [];
+
+// =================== HELPER FUNCTIONS ===================
 
 // Image analysis using OpenRouter API
 async function analyzeImage(imageUrl) {
@@ -52,7 +77,7 @@ async function analyzeImage(imageUrl) {
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || 'sk-or-v1-9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f'}`,
+          'Authorization': `Bearer ${OPENROUTER_API_KEY || 'sk-or-v1-9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f'}`,
           'HTTP-Referer': `http://localhost:${PORT}`,
           'X-Title': 'Student WebMind',
           'Content-Type': 'application/json'
@@ -67,8 +92,26 @@ async function analyzeImage(imageUrl) {
   }
 }
 
+// Cleanup uploaded files periodically
+setInterval(() => {
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000;
+  fs.readdir('uploads/', (err, files) => {
+    if (err) return;
+    files.forEach(file => {
+      const filePath = path.join('uploads/', file);
+      const stat = fs.statSync(filePath);
+      if (now - stat.mtimeMs > oneHour) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  });
+}, 60 * 60 * 1000);
+
+// =================== STUDENT ENDPOINTS ===================
+
 // Enhanced chat endpoint with improved response formatting
-app.post('/chat', upload.single('image'), async (req, res) => {
+app.post('/chat', uploadToDisk.single('image'), async (req, res) => {
   const message = req.body.message;
   let imageUrl = null;
   let imageAnalysis = null;
@@ -87,7 +130,7 @@ app.post('/chat', upload.single('image'), async (req, res) => {
     }),
   };
 
-  history.push(userMessage);
+  studentChatHistory.push(userMessage);
 
   try {
     // Include image analysis in the message if available
@@ -96,17 +139,17 @@ app.post('/chat', upload.single('image'), async (req, res) => {
       : message;
 
     const response = await axios.post(
-      'https://api.mistral.ai/v1/chat/completions',
+      MISTRAL_API_URL,
       {
         model: 'mistral-small',
-        messages: history.map(({ role, content, image, imageAnalysis }) => ({
+        messages: studentChatHistory.map(({ role, content, image, imageAnalysis }) => ({
           role,
           content: image ? `${content}\n[Image Analysis: ${imageAnalysis}]` : content
         })),
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.MISTRAL_API_KEY || 'h4fxd9juHwPuRpXoqh2pTzMSxzBl0Vzy'}`,
+          Authorization: `Bearer ${MISTRAL_API_KEY || 'h4fxd9juHwPuRpXoqh2pTzMSxzBl0Vzy'}`,
           'Content-Type': 'application/json',
         }
       }
@@ -114,11 +157,11 @@ app.post('/chat', upload.single('image'), async (req, res) => {
 
     const assistantReply = response.data.choices[0].message.content;
 
-    history.push({ role: 'assistant', content: assistantReply });
+    studentChatHistory.push({ role: 'assistant', content: assistantReply });
     res.json({ 
       success: true,
       reply: assistantReply, 
-      history,
+      history: studentChatHistory,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -127,18 +170,56 @@ app.post('/chat', upload.single('image'), async (req, res) => {
   }
 });
 
-
-// Get conversation history
+// Get student conversation history
 app.get('/history', (req, res) => {
   res.json({ 
     success: true,
-    history,
+    history: studentChatHistory,
     message: "Conversation history retrieved successfully"
   });
 });
 
-// In-memory storage for lesson plans (in a real app, this would be a database)
-let lessonPlans = [];
+// =================== TEACHER ENDPOINTS ===================
+
+// Teacher chat endpoint
+app.post('/teacher-chat', async (req, res) => {
+  try {
+    const userMessage = req.body.message;
+    
+    // Add user message to history
+    teacherChatHistory.push({
+      role: 'user',
+      content: userMessage
+    });
+    
+    // Call Mistral API
+    const response = await axios.post(MISTRAL_API_URL, {
+      model: 'mistral-small-latest', // Updated from mistral-tiny which is being deprecated
+      messages: teacherChatHistory
+    }, {
+      headers: {
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const aiResponse = response.data.choices[0].message.content;
+    
+    // Add AI response to history
+    teacherChatHistory.push({
+      role: 'assistant',
+      content: aiResponse
+    });
+    
+    res.json({ history: teacherChatHistory });
+    
+  } catch (error) {
+    console.error('Error calling Mistral API:', error);
+    res.status(500).json({ error: 'Failed to process message' });
+  }
+});
+
+// =================== LESSON PLAN ENDPOINTS ===================
 
 // Create a new lesson plan
 app.post('/lesson-plans', (req, res) => {
@@ -274,30 +355,247 @@ app.delete('/lesson-plans/:planId', (req, res) => {
   }
 });
 
-// Cleanup uploaded files periodically
-setInterval(() => {
-  const now = Date.now();
-  const oneHour = 60 * 60 * 1000;
-  fs.readdir('uploads/', (err, files) => {
-    if (err) return;
-    files.forEach(file => {
-      const filePath = path.join('uploads/', file);
-      const stat = fs.statSync(filePath);
-      if (now - stat.mtimeMs > oneHour) {
-        fs.unlinkSync(filePath);
+// Generate a lesson plan using Mistral AI
+app.post('/generate-lesson-plan', async (req, res) => {
+  try {
+    const { templateType, topicName, duration } = req.body;
+    
+    if (!templateType || !topicName || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: templateType, topicName, or duration'
+      });
+    }
+    
+    // Construct a prompt based on the template type and user's request for more detail
+    let prompt = `Generate a detailed lesson plan for a ${duration}-minute lesson on "${topicName}" using the "${templateType}" teaching approach. `;
+    prompt += 'Make the lesson plan engaging by incorporating the following elements: ';
+    prompt += '1. Facts and figures: Include 3-5 relevant statistics, data points, or interesting facts about the topic. ';
+    prompt += '2. Storytelling: Include a short, engaging narrative or anecdote related to the topic that captures student interest. ';
+    prompt += '3. Real-world examples: Provide 2-3 concrete, relatable examples showing how the topic applies in real-life situations. ';
+    prompt += '4. Practice exercises: Include 2-3 hands-on activities or exercises for students to apply what they have learned. ';
+    prompt += 'The lesson plan should include the following sections: ';
+    prompt += '1. Learning objectives (3-5 specific, measurable goals), ';
+    prompt += '2. Required materials (list all necessary items), ';
+    prompt += '3. A breakdown of activities with time allocations (ensure they fit within the total duration), ';
+    prompt += '4. Assessment strategies (how you will measure student understanding), ';
+    prompt += '5. Homework or follow-up activities. ';
+    prompt += 'Format the response as a structured JSON object with these sections, including the additional elements (factsAndFigures, story, realWorldExamples, practiceExercises).';
+    
+    // Call Mistral API
+    const response = await axios.post(
+      MISTRAL_API_URL,
+      {
+        model: 'mistral-small-latest',
+        messages: [
+          { role: 'system', content: 'You are an expert educational consultant specializing in curriculum development and lesson planning. You create engaging, well-structured lesson plans that incorporate facts and figures, storytelling elements, real-world examples, and practical exercises to maximize student engagement and learning outcomes.' },
+          { role: 'user', content: prompt }
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${MISTRAL_API_KEY}`,
+          'Content-Type': 'application/json',
+        }
       }
-    });
-  });
-}, 60 * 60 * 1000);
+    );
+    
+    const generatedLessonPlan = response.data.choices[0].message.content;
+     
+    // Clean the response to remove markdown code block syntax and extract JSON content
+    let cleanedLessonPlan = generatedLessonPlan;
+    
+    // First, try to extract JSON from markdown code blocks
+    if (generatedLessonPlan.includes('```json')) {
+      const jsonMatch = generatedLessonPlan.match(/```json\s*([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        cleanedLessonPlan = jsonMatch[1].trim();
+      } else {
+        cleanedLessonPlan = generatedLessonPlan.replace(/```json\s*|```\s*$/g, '');
+      }
+    } else {
+      // If no code blocks, try to find JSON object in the text
+      const jsonStartIndex = generatedLessonPlan.indexOf('{');
+      const jsonEndIndex = generatedLessonPlan.lastIndexOf('}');
+      
+      if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+        cleanedLessonPlan = generatedLessonPlan.substring(jsonStartIndex, jsonEndIndex + 1);
+      }
+    }
+    
+    // Validate that the cleaned content is valid JSON
+    let parsedLessonPlan;
+    try {
+      parsedLessonPlan = JSON.parse(cleanedLessonPlan);
+      console.log('Parsed lesson plan:', parsedLessonPlan);
+      
+      // Send the parsed JSON object directly
+      res.json({ success: true, lessonPlan: parsedLessonPlan, message: 'Lesson plan generated successfully' });
+    } catch (error) {
+      console.warn('Could not parse response as JSON, returning raw content');
+      // If not valid JSON, create a simple JSON structure with the content
+      parsedLessonPlan = {
+        title: 'AI Generated Lesson Plan',
+        content: generatedLessonPlan
+      };
+      
+      // Send the fallback JSON object
+      res.json({ success: true, lessonPlan: parsedLessonPlan, message: 'Lesson plan generated successfully' });
+    }
+  } catch (error) {
+    console.error('Error generating lesson plan:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate lesson plan' });
+  }
+});
 
+// =================== MEDICAL ENDPOINTS ===================
+
+// Analyze X-ray (base64)
+app.post('/api/analyze-xray', uploadToMemory.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No X-ray image uploaded' });
+    }
+
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: "meta-llama/llama-4-maverick:free",
+        messages: [
+          {
+            role: "system",
+            content: "You are a medical diagnostic assistant specialized in radiology. Analyze X-ray images and provide professional findings in medical terminology. Be concise and focus on abnormalities, potential diagnoses, and recommended next steps."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Please analyze this X-ray image and provide a diagnostic report." },
+              { type: "image_url", image_url: { url: base64Image } }
+            ]
+          }
+        ]
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'http://localhost:5000',
+          'X-Title': 'Medical Diagnosis App'
+        }
+      }
+    );
+
+    res.json({
+      report: response.data.choices[0].message.content
+    });
+  } catch (error) {
+    console.error('X-ray Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to analyze X-ray' });
+  }
+});
+
+// Medical Chat
+app.post('/api/medical-chat', async (req, res) => {
+  try {
+    const { messages } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: "meta-llama/llama-4-maverick:free",
+        messages: [
+          {
+            role: "system",
+            content: "You are a medical professional assisting doctors with diagnosis. Provide concise, professional answers using medical terminology. Focus on accuracy and clinical relevance."
+          },
+          ...messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        ]
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'http://localhost:5000',
+          'X-Title': 'Medical Diagnosis App'
+        }
+      }
+    );
+
+    res.json({
+      message: response.data.choices[0].message.content
+    });
+  } catch (error) {
+    console.error('Medical Chat Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to process medical query' });
+  }
+});
+
+// General Image Reader (base64)
+app.post('/api/read-image', uploadToMemory.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const { prompt } = req.body;
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: "meta-llama/llama-4-maverick:free",
+        messages: [
+          {
+            role: "system",
+            content: "You are an intelligent visual assistant. You can analyze, describe, and interpret any image using natural language."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt || "What's in this image?" },
+              { type: "image_url", image_url: { url: base64Image } }
+            ]
+          }
+        ]
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': 'http://localhost:5000',
+          'X-Title': 'Image Reader AI'
+        }
+      }
+    );
+
+    res.json({
+      description: response.data.choices[0].message.content
+    });
+  } catch (error) {
+    console.error('Image Read Error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Image reading failed' });
+  }
+});
+
+// =================== Start Server ===================
 app.listen(PORT, () => {
-  console.log(`✅ Student WebMind Server running successfully at http://localhost:${PORT}`);
+  console.log(`✅ Unified Server running at http://localhost:${PORT}`);
   console.log(`📝 API Endpoints available:`);
-  console.log(`   - POST /chat - Send messages and images`);
-  console.log(`   - GET /history - View conversation history`);
+  console.log(`   - POST /chat - Send messages and images to student assistant`);
+  console.log(`   - GET /history - View student conversation history`);
+  console.log(`   - POST /teacher-chat - Send messages to teacher assistant`);
+  console.log(`   - POST /generate-lesson-plan - Generate lesson plans with AI`);
   console.log(`   - POST /lesson-plans - Create a new lesson plan`);
   console.log(`   - GET /lesson-plans/teacher/:teacherId - Get all lesson plans for a teacher`);
   console.log(`   - GET /lesson-plans/:planId - Get a specific lesson plan`);
   console.log(`   - PUT /lesson-plans/:planId - Update a lesson plan`);
   console.log(`   - DELETE /lesson-plans/:planId - Delete a lesson plan`);
+  console.log(`   - POST /api/analyze-xray - Analyze X-ray images`);
+  console.log(`   - POST /api/medical-chat - Medical chat assistant`);
+  console.log(`   - POST /api/read-image - General image analysis`);
+  console.log(`   - /api/auth/* - Authentication endpoints`);
 });

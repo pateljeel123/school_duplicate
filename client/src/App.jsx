@@ -6,7 +6,11 @@ import Home from './pages/Home'
 import Courses from './pages/Courses'
 import About from './pages/About'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import NotFound from './pages/NotFound'
+import ProfileCompletion from './pages/ProfileCompletion'
+import ResetPassword from './pages/ResetPassword'
+import ForgotPassword from './pages/ForgotPassword'
 
 // Dashboards
 import StudentDashboard from './pages/dashboards/StudentDashboard'
@@ -87,6 +91,45 @@ function App() {
                 <Navigate to={`/dashboard/${userRole}`} /> : 
                 <Login onLogin={handleLogin} />
               }
+            </main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/signup" element={
+          <div className="flex flex-col min-h-screen">
+            <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
+            <main className="flex-grow">
+              {isAuthenticated ? 
+                <Navigate to={`/dashboard/${userRole}`} /> : 
+                <Signup onLogin={handleLogin} />
+              }
+            </main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/profile-completion" element={
+          <div className="flex flex-col min-h-screen">
+            <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
+            <main className="flex-grow">
+              <ProfileCompletion />
+            </main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/reset-password" element={
+          <div className="flex flex-col min-h-screen">
+            <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
+            <main className="flex-grow">
+              <ResetPassword />
+            </main>
+            <Footer />
+          </div>
+        } />
+        <Route path="/forgot-password" element={
+          <div className="flex flex-col min-h-screen">
+            <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
+            <main className="flex-grow">
+              <ForgotPassword />
             </main>
             <Footer />
           </div>

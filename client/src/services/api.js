@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Base URLs for different servers
-const MAIN_API_URL = 'http://localhost:3000';
-const TEACHER_API_URL = 'http://localhost:3001';
+const MAIN_API_URL = 'http://localhost:3001';
+const TEACHER_API_URL = 'http://localhost:3002';
 const ADMIN_API_URL = 'http://localhost:5000';
 
 // Create axios instances for different servers
@@ -67,7 +67,39 @@ export const chatService = {
   
   sendTeacherMessage: async (message) => {
     const response = await teacherApi.post('/teacher-chat', { message });
-    return response.data;
+    return JSON.parse(response.data);
+  },
+  
+  // Add getChatHistory method
+  getChatHistory: async (teacherId) => {
+    try {
+      const response = await teacherApi.get(`/chat-history/${teacherId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      return { success: false, data: [] };
+    }
+  },
+  
+  // Add getStudentInteractions method
+  getStudentInteractions: async (teacherId) => {
+    try {
+      const response = await teacherApi.get(`/student-interactions/${teacherId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student interactions:', error);
+      // Return mock data as fallback
+      return {
+        success: true,
+        data: {
+          students: [],
+          weeklyActivity: [],
+          totalStudents: 0,
+          totalMessages: 0,
+          activeStudents: 0
+        }
+      };
+    }
   },
 };
 
@@ -87,7 +119,7 @@ export const lessonPlanningService = {
   // Get all lesson plans for a teacher
   getTeacherLessonPlans: async (teacherId) => {
     try {
-      const response = await mainApi.get(`/lesson-plans/teacher/${teacherId}`);
+      const response = await teacherApi.get(`/lesson-plans/teacher/${teacherId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching lesson plans:', error);
@@ -124,6 +156,22 @@ export const lessonPlanningService = {
       return response.data;
     } catch (error) {
       console.error('Error deleting lesson plan:', error);
+      throw error;
+    }
+  },
+  
+  // Generate a lesson plan using Mistral AI
+  generateLessonPlanWithAI: async (templateType, topicName, duration, language = 'english') => {
+    try {
+      const response = await teacherApi.post('/generate-lesson-plan', {
+        templateType,
+        topicName,
+        duration,
+        language
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error generating lesson plan with AI:', error);
       throw error;
     }
   },

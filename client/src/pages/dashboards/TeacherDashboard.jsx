@@ -1,208 +1,232 @@
-import { useState, useRef, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { chatService } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { chatService, userService } from '../../services/api';
 
 const TeacherDashboard = () => {
-  // State for chat functionality
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'analytics'
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      content: 'Hello! I\'m your Teacher AI assistant. How can I help you with your teaching today?',
-      sender: 'ai',
-      timestamp: new Date(),
-    },
-  ]);
+  // State for active tab
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  // State for chat messages
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const messagesEndRef = useRef(null);
-
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messagesError, setMessagesError] = useState(null);
+  
   // State for student data
-  const [studentData, setStudentData] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [totalMessages, setTotalMessages] = useState(0);
-  const [activeStudents, setActiveStudents] = useState(0);
-
-  // Get teacher ID from localStorage (would be set during login)
-  const teacherId = localStorage.getItem('userId') || '1'; // Default to '1' for testing
-
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentsError, setStudentsError] = useState(null);
+  
+  // State for analytics data
+  const [analyticsData, setAnalyticsData] = useState({
+    studentPerformance: [],
+    studentEngagement: [],
+    subjectPerformance: [],
+  });
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
+  
+  // Colors for charts
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  
   // Fetch chat history when component mounts
   useEffect(() => {
     const fetchChatHistory = async () => {
+      setLoadingMessages(true);
+      setMessagesError(null);
       try {
-        const response = await chatService.getChatHistory(teacherId);
-        if (response.success && response.data.length > 0) {
-          // Format the messages from the API
-          const formattedMessages = response.data.map(msg => ({
-            id: msg.id,
-            content: msg.content,
-            sender: msg.sender,
-            timestamp: new Date(msg.timestamp)
-          }));
-          setMessages(formattedMessages);
+        const response = await chatService.getChatHistory();
+        if (response && response.data) {
+          setMessages(response.data);
+        } else {
+          // Fallback to mock data if API returns empty
+          setMessages([
+            { id: 1, sender: 'AI Assistant', content: 'Hello! How can I help you today?', timestamp: new Date(Date.now() - 86400000).toISOString() },
+            { id: 2, sender: 'Teacher', content: 'I need help creating a lesson plan for tomorrow.', timestamp: new Date(Date.now() - 85400000).toISOString() },
+            { id: 3, sender: 'AI Assistant', content: 'Sure! What subject and grade level are you teaching?', timestamp: new Date(Date.now() - 84400000).toISOString() },
+            { id: 4, sender: 'Teacher', content: 'Science for 8th grade. The topic is photosynthesis.', timestamp: new Date(Date.now() - 83400000).toISOString() },
+            { id: 5, sender: 'AI Assistant', content: 'Great! Here\'s a suggested lesson plan for photosynthesis...', timestamp: new Date(Date.now() - 82400000).toISOString() },
+          ]);
         }
       } catch (err) {
         console.error('Error fetching chat history:', err);
-        // Keep the default welcome message if there's an error
+        setMessagesError('Failed to load chat history. Using sample data instead.');
+        
+        // Fallback to mock data
+        setMessages([
+          { id: 1, sender: 'AI Assistant', content: 'Hello! How can I help you today?', timestamp: new Date(Date.now() - 86400000).toISOString() },
+          { id: 2, sender: 'Teacher', content: 'I need help creating a lesson plan for tomorrow.', timestamp: new Date(Date.now() - 85400000).toISOString() },
+          { id: 3, sender: 'AI Assistant', content: 'Sure! What subject and grade level are you teaching?', timestamp: new Date(Date.now() - 84400000).toISOString() },
+          { id: 4, sender: 'Teacher', content: 'Science for 8th grade. The topic is photosynthesis.', timestamp: new Date(Date.now() - 83400000).toISOString() },
+          { id: 5, sender: 'AI Assistant', content: 'Great! Here\'s a suggested lesson plan for photosynthesis...', timestamp: new Date(Date.now() - 82400000).toISOString() },
+        ]);
+      } finally {
+        setLoadingMessages(false);
       }
     };
-
+    
     fetchChatHistory();
-  }, [teacherId]);
-
-  // Fetch student data when component mounts or tab changes to analytics
+  }, []);
+  
+  // Fetch students data when component mounts
   useEffect(() => {
-    if (activeTab === 'analytics') {
-      const fetchStudentData = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          // Fetch student data from API
-          const response = await chatService.getStudentInteractions(teacherId);
-          
-          if (response.success) {
-            // Update student data
-            setStudentData(response.data.students || []);
-            
-            // Update chart data
-            setChartData(response.data.weeklyActivity || [
-              { name: 'Monday', messages: 45 },
-              { name: 'Tuesday', messages: 38 },
-              { name: 'Wednesday', messages: 52 },
-              { name: 'Thursday', messages: 41 },
-              { name: 'Friday', messages: 30 },
-              { name: 'Saturday', messages: 18 },
-              { name: 'Sunday', messages: 25 },
-            ]);
-            
-            // Update summary data
-            setTotalStudents(response.data.totalStudents || 0);
-            setTotalMessages(response.data.totalMessages || 0);
-            setActiveStudents(response.data.activeStudents || 0);
-          }
-        } catch (err) {
-          console.error('Error fetching student data:', err);
-          setError('Failed to load student data. Using sample data instead.');
-          
-          // Fallback to mock data
-          setStudentData([
-            {
-              id: 1,
-              name: 'John Smith',
-              messages: 24,
-              lastActive: '2 hours ago',
-              avatar: 'https://via.placeholder.com/40?text=JS',
-            },
-            {
-              id: 2,
-              name: 'Emily Johnson',
-              messages: 18,
-              lastActive: '1 day ago',
-              avatar: 'https://via.placeholder.com/40?text=EJ',
-            },
-            {
-              id: 3,
-              name: 'Michael Brown',
-              messages: 32,
-              lastActive: '5 minutes ago',
-              avatar: 'https://via.placeholder.com/40?text=MB',
-            },
-            {
-              id: 4,
-              name: 'Sarah Davis',
-              messages: 15,
-              lastActive: '3 hours ago',
-              avatar: 'https://via.placeholder.com/40?text=SD',
-            },
-            {
-              id: 5,
-              name: 'David Wilson',
-              messages: 27,
-              lastActive: '30 minutes ago',
-              avatar: 'https://via.placeholder.com/40?text=DW',
-            },
+    const fetchStudents = async () => {
+      setLoadingStudents(true);
+      setStudentsError(null);
+      try {
+        const response = await userService.getStudents();
+        if (response && response.data && response.data.length > 0) {
+          setStudents(response.data);
+        } else {
+          // Fallback to mock data if API returns empty
+          setStudents([
+            { id: 1, name: 'John Doe', grade: '8th', attendance: 92, performance: 85, lastActive: '2023-06-15T10:30:00Z' },
+            { id: 2, name: 'Jane Smith', grade: '8th', attendance: 88, performance: 92, lastActive: '2023-06-14T09:45:00Z' },
+            { id: 3, name: 'Robert Johnson', grade: '8th', attendance: 95, performance: 78, lastActive: '2023-06-15T11:20:00Z' },
+            { id: 4, name: 'Emily Davis', grade: '8th', attendance: 90, performance: 88, lastActive: '2023-06-13T14:10:00Z' },
+            { id: 5, name: 'Michael Brown', grade: '8th', attendance: 85, performance: 80, lastActive: '2023-06-12T15:30:00Z' },
           ]);
-        } finally {
-          setLoading(false);
         }
-      };
-      
-      fetchStudentData();
-    }
-  }, [activeTab, teacherId]);
-
-  // Scroll to bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+      } catch (err) {
+        console.error('Error fetching students data:', err);
+        setStudentsError('Failed to load students data. Using sample data instead.');
+        
+        // Fallback to mock data
+        setStudents([
+          { id: 1, name: 'John Doe', grade: '8th', attendance: 92, performance: 85, lastActive: '2023-06-15T10:30:00Z' },
+          { id: 2, name: 'Jane Smith', grade: '8th', attendance: 88, performance: 92, lastActive: '2023-06-14T09:45:00Z' },
+          { id: 3, name: 'Robert Johnson', grade: '8th', attendance: 95, performance: 78, lastActive: '2023-06-15T11:20:00Z' },
+          { id: 4, name: 'Emily Davis', grade: '8th', attendance: 90, performance: 88, lastActive: '2023-06-13T14:10:00Z' },
+          { id: 5, name: 'Michael Brown', grade: '8th', attendance: 85, performance: 80, lastActive: '2023-06-12T15:30:00Z' },
+        ]);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+    
+    fetchStudents();
+  }, []);
+  
+  // Fetch analytics data when component mounts
   useEffect(() => {
-    if (activeTab === 'chat') {
-      scrollToBottom();
+    const fetchAnalyticsData = async () => {
+      setLoadingAnalytics(true);
+      setAnalyticsError(null);
+      try {
+        // In a real app, you would fetch analytics data from an API
+        // const response = await analyticsService.getTeacherAnalytics();
+        // setAnalyticsData(response.data);
+        
+        // Using mock data for now
+        // This would be replaced with actual API calls in a production environment
+        
+        // Prepare student performance data
+        const studentPerformanceData = students.map(student => ({
+          name: student.name,
+          performance: student.performance || Math.floor(Math.random() * 30) + 70, // Random score between 70-100 if not available
+        }));
+        
+        // Prepare student engagement data
+        const studentEngagementData = [
+          { name: 'High', value: Math.floor(students.length * 0.4) }, // 40% of students
+          { name: 'Medium', value: Math.floor(students.length * 0.35) }, // 35% of students
+          { name: 'Low', value: Math.floor(students.length * 0.25) }, // 25% of students
+        ];
+        
+        // Prepare subject performance data
+        const subjectPerformanceData = [
+          { name: 'Science', score: 82 },
+          { name: 'Math', score: 78 },
+          { name: 'English', score: 85 },
+          { name: 'History', score: 80 },
+          { name: 'Art', score: 88 },
+        ];
+        
+        setAnalyticsData({
+          studentPerformance: studentPerformanceData,
+          studentEngagement: studentEngagementData,
+          subjectPerformance: subjectPerformanceData,
+        });
+      } catch (err) {
+        console.error('Error fetching analytics data:', err);
+        setAnalyticsError('Failed to load analytics data. Using sample data instead.');
+        
+        // Fallback to mock data
+        setAnalyticsData({
+          studentPerformance: [
+            { name: 'John D.', performance: 85 },
+            { name: 'Jane S.', performance: 92 },
+            { name: 'Robert J.', performance: 78 },
+            { name: 'Emily D.', performance: 88 },
+            { name: 'Michael B.', performance: 80 },
+          ],
+          studentEngagement: [
+            { name: 'High', value: 2 },
+            { name: 'Medium', value: 2 },
+            { name: 'Low', value: 1 },
+          ],
+          subjectPerformance: [
+            { name: 'Science', score: 82 },
+            { name: 'Math', score: 78 },
+            { name: 'English', score: 85 },
+            { name: 'History', score: 80 },
+            { name: 'Art', score: 88 },
+          ],
+        });
+      } finally {
+        setLoadingAnalytics(false);
+      }
+    };
+    
+    // Only fetch analytics if we have students data
+    if (students.length > 0) {
+      fetchAnalyticsData();
     }
-  }, [messages, activeTab]);
-
+  }, [students]);
+  
   // Handle sending a new message
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
     if (!newMessage.trim()) return;
     
-    // Add user message
-    const userMessage = {
+    const messageObj = {
       id: messages.length + 1,
+      sender: 'Teacher',
       content: newMessage,
-      sender: 'user',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
     
-    setMessages([...messages, userMessage]);
+    // Add message to UI immediately
+    setMessages([...messages, messageObj]);
     setNewMessage('');
-    
-    // Show AI typing indicator
-    setIsTyping(true);
     
     try {
       // Send message to API
-      const response = await chatService.sendMessage({
-        teacherId,
-        message: newMessage
-      });
+      await chatService.sendMessage(newMessage);
       
-      // Add AI response
-      const aiMessage = {
-        id: messages.length + 2,
-        content: response.data?.reply || "I'm sorry, I couldn't process your request at the moment.",
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
+      // In a real app, you would wait for the AI response
+      // For now, simulate an AI response after a short delay
+      setTimeout(() => {
+        const aiResponse = {
+          id: messages.length + 2,
+          sender: 'AI Assistant',
+          content: 'I\'m processing your request. How else can I assist you today?',
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prevMessages => [...prevMessages, aiResponse]);
+      }, 1000);
     } catch (err) {
       console.error('Error sending message:', err);
-      
-      // Add error message
-      const errorMessage = {
-        id: messages.length + 2,
-        content: "I'm sorry, there was an error processing your request. Please try again later.",
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
-    } finally {
-      setIsTyping(false);
+      // Handle error (could show a notification to the user)
     }
   };
-
-  // Format timestamp
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
   };
-
+  
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Dashboard header */}
@@ -212,196 +236,459 @@ const TeacherDashboard = () => {
       
       {/* Tab navigation */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto flex">
+        <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
-            onClick={() => setActiveTab('chat')}
-            className={`px-6 py-3 font-medium ${activeTab === 'chat' 
+            onClick={() => setActiveTab('overview')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
+              ? 'text-primary border-b-2 border-primary' 
+              : 'text-gray-500 hover:text-primary'}`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('students')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'students' 
+              ? 'text-primary border-b-2 border-primary' 
+              : 'text-gray-500 hover:text-primary'}`}
+          >
+            Students
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
+              ? 'text-primary border-b-2 border-primary' 
+              : 'text-gray-500 hover:text-primary'}`}
+          >
+            Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'messages' 
               ? 'text-primary border-b-2 border-primary' 
               : 'text-gray-500 hover:text-primary'}`}
           >
             AI Assistant
           </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 font-medium ${activeTab === 'analytics' 
-              ? 'text-primary border-b-2 border-primary' 
-              : 'text-gray-500 hover:text-primary'}`}
-          >
-            Student Analytics
-          </button>
         </div>
       </div>
       
       {/* Main content */}
-      <div className="flex-grow p-4">
+      <div className="flex-grow p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          {activeTab === 'chat' ? (
-            // Chat interface
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              {/* Messages area */}
-              <div className="h-[60vh] overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <div 
-                    key={message.id} 
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div 
-                      className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user' 
-                        ? 'bg-primary text-white rounded-br-none' 
-                        : 'bg-gray-100 text-[#1E1E1E] rounded-bl-none'}`}
-                    >
-                      <p>{message.content}</p>
-                      <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {formatTime(message.timestamp)}
-                      </p>
-                    </div>
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Total Students</h3>
+                  <p className="mt-2 text-3xl font-bold text-primary">{students.length}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Assigned to your classes</span>
                   </div>
-                ))}
+                </div>
                 
-                {/* Typing indicator */}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg p-3 rounded-bl-none">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Average Performance</h3>
+                  <p className="mt-2 text-3xl font-bold text-green-600">
+                    {students.length > 0 
+                      ? Math.round(students.reduce((sum, student) => sum + (student.performance || 0), 0) / students.length) 
+                      : 0}%
+                  </p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Based on recent assessments</span>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Average Attendance</h3>
+                  <p className="mt-2 text-3xl font-bold text-blue-600">
+                    {students.length > 0 
+                      ? Math.round(students.reduce((sum, student) => sum + (student.attendance || 0), 0) / students.length) 
+                      : 0}%
+                  </p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Last 30 days</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Student Performance */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Student Performance</h3>
+                  <div className="h-64">
+                    {loadingAnalytics ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
                       </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-              
-              {/* Message input */}
-              <div className="bg-white p-4 border-t">
-                <form onSubmit={handleSendMessage} className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Ask the Teacher AI assistant..."
-                    className="flex-grow px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <button 
-                    type="submit" 
-                    className="bg-primary text-white rounded-full p-2 hover:bg-opacity-90 focus:outline-none"
-                    disabled={!newMessage.trim()}
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                    </svg>
-                  </button>
-                </form>
-              </div>
-            </div>
-          ) : (
-            // Analytics interface
-            <div className="space-y-8">
-              {/* Error message */}
-              {error && (
-                <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md">
-                  {error}
-                </div>
-              )}
-              
-              {/* Loading state */}
-              {loading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <>
-                  {/* Summary cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Students</h3>
-                      <p className="text-3xl font-bold text-primary">{totalStudents || studentData.length}</p>
-                    </div>
-                    
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Messages</h3>
-                      <p className="text-3xl font-bold text-primary">
-                        {totalMessages || studentData.reduce((sum, student) => sum + student.messages, 0)}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Active Students Today</h3>
-                      <p className="text-3xl font-bold text-primary">{activeStudents || 3}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Chart */}
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Weekly Message Activity</h3>
-                    <div className="h-80">
+                    ) : analyticsError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{analyticsError}</p>
+                      </div>
+                    ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
+                        <BarChart data={analyticsData.studentPerformance}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="name" />
-                          <YAxis />
+                          <YAxis domain={[0, 100]} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="messages" fill="#2E86AB" name="Messages" />
+                          <Bar dataKey="performance" fill="#0088FE" name="Performance Score" />
                         </BarChart>
                       </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                  {/* Student list */}
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <h3 className="text-lg font-semibold text-gray-700 p-6 border-b">Student Interaction Logs</h3>
-                    {studentData.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500">No student interaction data available</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Messages</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {studentData.map((student) => (
-                              <tr key={student.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div className="flex-shrink-0 h-10 w-10">
-                                      <img className="h-10 w-10 rounded-full" src={student.avatar} alt="" />
-                                    </div>
-                                    <div className="ml-4">
-                                      <div className="text-sm font-medium text-[#1E1E1E]">{student.name}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-[#1E1E1E]">{student.messages}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-500">{student.lastActive}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <button 
-                                    className="text-primary hover:text-primary-dark"
-                                    onClick={() => window.location.href = `/student-analytics/${student.id}`}
-                                  >
-                                    View Details
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
                     )}
                   </div>
-                </>
-              )}
+                </div>
+                
+                {/* Student Engagement */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Student Engagement</h3>
+                  <div className="h-64">
+                    {loadingAnalytics ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
+                      </div>
+                    ) : analyticsError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{analyticsError}</p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={analyticsData.studentEngagement}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {analyticsData.studentEngagement.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent Activity */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">Recent Student Activity</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loadingStudents ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading student activity...</p>
+                    </div>
+                  ) : studentsError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{studentsError}</p>
+                    </div>
+                  ) : students.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No student activity found.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {students.slice(0, 5).map((student) => (
+                          <tr key={student.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                                  {student.name ? student.name.charAt(0) : '?'}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{student.name || 'Unknown'}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.grade || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.performance || 'N/A'}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.attendance || 'N/A'}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(student.lastActive)}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Students Tab */}
+          {activeTab === 'students' && (
+            <div className="space-y-6">
+              {/* Search and filters */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-grow">
+                    <input
+                      type="text"
+                      placeholder="Search students..."
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
+                      Add Student
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Students list */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">Your Students</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  {loadingStudents ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading students data...</p>
+                    </div>
+                  ) : studentsError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{studentsError}</p>
+                    </div>
+                  ) : students.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No students found.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {students.map((student) => (
+                          <tr key={student.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                                  {student.name ? student.name.charAt(0) : '?'}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{student.name || 'Unknown'}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.grade || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.performance || 'N/A'}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{student.attendance || 'N/A'}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(student.lastActive)}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button className="text-primary hover:text-primary-dark mr-3">View Details</button>
+                              <button className="text-blue-600 hover:text-blue-900">Message</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              {/* Student Performance */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Student Performance</h3>
+                <div className="h-80">
+                  {loadingAnalytics ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chart data...</p>
+                    </div>
+                  ) : analyticsError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{analyticsError}</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analyticsData.studentPerformance}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[0, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="performance" fill="#0088FE" name="Performance Score" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+              
+              {/* Subject Performance */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Subject Performance</h3>
+                <div className="h-80">
+                  {loadingAnalytics ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chart data...</p>
+                    </div>
+                  ) : analyticsError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{analyticsError}</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analyticsData.subjectPerformance}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[0, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="score" fill="#00C49F" name="Average Score" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+              
+              {/* Student Engagement */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Student Engagement</h3>
+                <div className="h-80">
+                  {loadingAnalytics ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chart data...</p>
+                    </div>
+                  ) : analyticsError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{analyticsError}</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={analyticsData.studentEngagement}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={120}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {analyticsData.studentEngagement.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Messages Tab */}
+          {activeTab === 'messages' && (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-700">AI Assistant</h3>
+                <p className="text-sm text-gray-500 mt-1">Ask for help with lesson planning, grading, or any teaching task.</p>
+              </div>
+              
+              <div className="flex flex-col h-[600px]">
+                {/* Chat messages */}
+                <div className="flex-grow p-4 overflow-y-auto">
+                  {loadingMessages ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">Loading chat history...</p>
+                    </div>
+                  ) : messagesError ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-yellow-600">{messagesError}</p>
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">No messages yet. Start a conversation with the AI Assistant.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {messages.map((message) => (
+                        <div key={message.id} className={`flex ${message.sender === 'Teacher' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-3/4 rounded-lg p-3 ${message.sender === 'Teacher' ? 'bg-primary text-white' : 'bg-gray-100'}`}>
+                            <p className="text-sm">{message.content}</p>
+                            <p className="text-xs mt-1 opacity-70">{formatDate(message.timestamp)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Message input */}
+                <div className="border-t p-4">
+                  <form onSubmit={handleSendMessage} className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Type your message here..."
+                      className="flex-grow px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+                      disabled={!newMessage.trim()}
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
           )}
         </div>
