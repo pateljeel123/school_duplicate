@@ -1,69 +1,5 @@
 const supabaseModel = require("../Models/supabaseModel");
 
-module.exports.GETDOCTORS = async (req, res) => {
-    const { specialization } = req.query;
-    try {
-        const { data, error } = await supabaseModel.getDoctors(specialization);
-
-        if (error) {
-            return res.status(500).json({ error: "Database error", details: error.message });
-        }
-
-        return res.status(200).json({ doctorsData: data });
-    } catch (error) {
-        return res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-}
-
-module.exports.UpdateDoctors = async (req, res) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    if (!id) {
-        return res.status(400).json({ message: "Please provide an ID!!" });
-    }
-
-    try {
-        const { data, error } = await supabaseModel.updateDoctor(id, updateData);
-
-        if (error) {
-            return res.status(500).json({ message: "Database error", error: error.message });
-        }
-        return res.status(200).json({ message: "Doctor updated successfully", updatedData: data });
-    } catch (error) {
-        return res.status(400).json({ message: "Internal server error", error: error.message });
-    }
-};
-
-module.exports.DeleteDoctors = async (req, res) => {
-    const { id } = req.params;
-
-    if (!id) {
-        return res.status(400).json({ message: "Doctor ID required!" });
-    }
-
-    try {
-        const { error } = await supabaseModel.deleteDoctor(id);
-
-        if (error) {
-            return res.status(500).json({
-                message: "Error deleting doctor",
-                error: error.message
-            });
-        }
-
-        // Success case
-        return res.status(200).json({
-            message: "Doctor deleted successfully from both DB and Auth!"
-        });
-
-    } catch (err) {
-        return res.status(500).json({
-            message: "Internal server error",
-            error: err.message
-        });
-    }
-};
-
 module.exports.GET_HODS = async (req, res) => {
     const { department } = req.query;
     try {
@@ -124,6 +60,183 @@ module.exports.DELETE_HOD = async (req, res) => {
         }
 
         return res.status(200).json({ message: "HOD deleted successfully!" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+// Student routes handlers
+module.exports.GET_STUDENTS = async (req, res) => {
+    try {
+        const { data, error } = await supabaseModel.getStudents();
+
+        if (error) {
+            return res.status(500).json({ error: "Database error", details: error.message });
+        }
+
+        return res.status(200).json({ studentsData: data });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.UPDATE_STUDENT = async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide a student ID!" });
+    }
+
+    try {
+        const { data, error } = await supabaseModel.updateStudent(id, updateData);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({
+            message: "Student updated successfully",
+            updatedStudent: data
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.DELETE_STUDENT = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide a student ID to delete!" });
+    }
+
+    try {
+        const { error } = await supabaseModel.deleteStudent(id);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({ message: "Student deleted successfully!" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+// Teacher routes handlers
+module.exports.GET_TEACHERS = async (req, res) => {
+    try {
+        const { data, error } = await supabaseModel.getTeachers();
+
+        if (error) {
+            return res.status(500).json({ error: "Database error", details: error.message });
+        }
+
+        return res.status(200).json({ teachersData: data });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.UPDATE_TEACHER = async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide a teacher ID!" });
+    }
+
+    try {
+        const { data, error } = await supabaseModel.updateTeacher(id, updateData);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({
+            message: "Teacher updated successfully",
+            updatedTeacher: data
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.DELETE_TEACHER = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide a teacher ID to delete!" });
+    }
+
+    try {
+        const { error } = await supabaseModel.deleteTeacher(id);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({ message: "Teacher deleted successfully!" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+// Admin routes handlers
+module.exports.GET_ADMINS = async (req, res) => {
+    try {
+        const { data, error } = await supabaseModel.getAdmins();
+
+        if (error) {
+            return res.status(500).json({ error: "Database error", details: error.message });
+        }
+
+        return res.status(200).json({ adminsData: data });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.UPDATE_ADMIN = async (req, res) => {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide an admin ID!" });
+    }
+
+    try {
+        const { data, error } = await supabaseModel.updateAdmin(id, updateData);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({
+            message: "Admin updated successfully",
+            updatedAdmin: data
+        });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+module.exports.DELETE_ADMIN = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ message: "Please provide an admin ID to delete!" });
+    }
+
+    try {
+        const { error } = await supabaseModel.deleteAdmin(id);
+
+        if (error) {
+            return res.status(500).json({ message: "Database error", error: error.message });
+        }
+
+        return res.status(200).json({ message: "Admin deleted successfully!" });
     } catch (error) {
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }

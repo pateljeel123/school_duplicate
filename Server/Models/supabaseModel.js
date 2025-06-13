@@ -51,34 +51,45 @@ exports.updateUserMetadata = async (metadata) => {
 // User data functions
 exports.insertUserData = async (table, userData) => {
   try {
-    console.log(`Inserting data into table: ${table}`, userData);
-    const { data, error } = await supabase.from(table).insert([userData]).select();
+    console.log(`Attempting to insert into ${table}:`, userData);
+    
+    // First verify the table exists
+    const { data: tableExists, error: tableError } = await supabase
+      .rpc('table_exists', { table_name: table });
+    
+    if (tableError || !tableExists) {
+      throw new Error(`Table ${table} does not exist or cannot be accessed`);
+    }
+
+    // Perform the insert
+    const { data, error } = await supabase
+      .from(table)
+      .insert([userData])
+      .select();
     
     if (error) {
-      console.error(`Error inserting data into ${table}:`, error);
-      // Add more details to the error object to make it more informative
-      error.details = {
-        table,
-        message: error.message || 'Unknown database error',
+      console.error('Supabase error details:', {
+        message: error.message,
         code: error.code,
-        hint: error.hint || 'Check if the table exists and all required fields are provided'
-      };
-    } else {
-      console.log(`Successfully inserted data into ${table}:`, data);
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
     }
+
+    console.log('Insert successful:', data);
+    return { data, error: null };
     
-    return { data, error };
   } catch (err) {
-    console.error(`Exception when inserting data into ${table}:`, err);
-    // Make the error more descriptive
-    const enhancedError = {
-      message: err.message || 'Unknown error occurred',
-      details: {
-        table,
-        originalError: err.toString()
+    console.error('Full error stack:', err);
+    return { 
+      data: null, 
+      error: {
+        message: err.message,
+        code: err.code || 'UNKNOWN_ERROR',
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
       }
     };
-    return { data: null, error: enhancedError };
   }
 };
 
@@ -129,61 +140,10 @@ exports.verifySecurityPin = async (role, pin) => {
   return { data, error };
 };
 
-// Doctor/HOD related functions
-exports.getDoctors = async (specialization) => {
-  try {
-    let query = supabase.from('doctors').select('*').eq('role', 'Doctor');
-
-    if (specialization) {
-      query = query.eq('specialization', specialization);
-    }
-    
-    const { data, error } = await query;
-
-    return { data, error };
-  } catch (error) {
-    return { data: null, error };
-  }
-};
-
-exports.updateDoctor = async (id, updateData) => {
-  try {
-    const { data, error } = await supabase
-      .from('doctors')
-      .update(updateData)
-      .eq('id', id)
-      .select();
-
-    return { data, error };
-  } catch (error) {
-    return { data: null, error };
-  }
-};
-
-exports.deleteDoctor = async (id) => {
-  try {
-    // Step 1: Delete from doctors table first
-    const { error: dbError } = await supabase
-      .from('doctors')
-      .delete()
-      .eq('id', id);
-
-    if (dbError) {
-      return { error: dbError };
-    }
-
-    // Step 2: Delete auth user (using service role key)
-    const { error: authError } = await supabase.auth.admin.deleteUser(id);
-
-    return { error: authError };
-  } catch (error) {
-    return { error };
-  }
-};
-
+// HOD related functions
 exports.getHODs = async (department) => {
   try {
-    let query = supabase.from('doctors').select('*').eq('role', 'HOD');
+    let query = supabase.from('hod');
 
     if (department) {
       query = query.eq('department', department);
@@ -193,15 +153,17 @@ exports.getHODs = async (department) => {
 
     return { data, error };
   } catch (error) {
+    console.log(error)
     return { data: null, error };
   }
 };
+
 
 exports.updateHOD = async (id, updateData) => {
   try {
     // First verify this is actually an HOD
     const { data: existingHod, error: fetchError } = await supabase
-      .from('doctors')
+      .from('hod')
       .select('role')
       .eq('id', id)
       .single();
@@ -212,7 +174,7 @@ exports.updateHOD = async (id, updateData) => {
 
     // Now perform the update
     const { data, error } = await supabase
-      .from('doctors')
+      .from('hod')
       .update(updateData)
       .eq('id', id)
       .select();
@@ -227,7 +189,7 @@ exports.deleteHOD = async (id) => {
   try {
     // First verify this is actually an HOD
     const { data: existingHod, error: fetchError } = await supabase
-      .from('doctors')
+      .from('hod')
       .select('role')
       .eq('id', id)
       .single();
@@ -238,7 +200,7 @@ exports.deleteHOD = async (id) => {
 
     // Now perform the deletion
     const { error } = await supabase
-      .from('doctors')
+      .from('hod')
       .delete()
       .eq('id', id);
 
@@ -251,7 +213,7 @@ exports.deleteHOD = async (id) => {
 // Student related functions
 exports.getStudents = async (std) => {
   try {
-    let query = supabase.from('students').select('*');
+    let query = supabase.from('student').select('*');
 
     if (std) {
       query = query.eq('std', std);
@@ -268,7 +230,7 @@ exports.getStudents = async (std) => {
 exports.updateStudent = async (id, updateData) => {
   try {
     const { data, error } = await supabase
-      .from('students')
+      .from('student')
       .update(updateData)
       .eq('id', id)
       .select();
@@ -282,7 +244,7 @@ exports.updateStudent = async (id, updateData) => {
 exports.deleteStudent = async (id) => {
   try {
     const { error } = await supabase
-      .from('students')
+      .from('student')
       .delete()
       .eq('id', id);
 
@@ -295,7 +257,7 @@ exports.deleteStudent = async (id) => {
 // Teacher related functions
 exports.getTeachers = async (subjectExpertise) => {
   try {
-    let query = supabase.from('teachers').select('*');
+    let query = supabase.from('teacher').select('*');
 
     if (subjectExpertise) {
       query = query.eq('subject_expertise', subjectExpertise);
@@ -312,7 +274,7 @@ exports.getTeachers = async (subjectExpertise) => {
 exports.updateTeacher = async (id, updateData) => {
   try {
     const { data, error } = await supabase
-      .from('teachers')
+      .from('teacher')
       .update(updateData)
       .eq('id', id)
       .select();
@@ -326,7 +288,7 @@ exports.updateTeacher = async (id, updateData) => {
 exports.deleteTeacher = async (id) => {
   try {
     const { error } = await supabase
-      .from('teachers')
+      .from('teacher')
       .delete()
       .eq('id', id);
 
@@ -339,7 +301,7 @@ exports.deleteTeacher = async (id) => {
 // Admin related functions
 exports.getAdmins = async () => {
   try {
-    const { data, error } = await supabase.from('admins').select('*');
+    const { data, error } = await supabase.from('admin').select('*');
     return { data, error };
   } catch (error) {
     return { data: null, error };
@@ -349,7 +311,7 @@ exports.getAdmins = async () => {
 exports.updateAdmin = async (id, updateData) => {
   try {
     const { data, error } = await supabase
-      .from('admins')
+      .from('admin')
       .update(updateData)
       .eq('id', id)
       .select();
@@ -363,7 +325,7 @@ exports.updateAdmin = async (id, updateData) => {
 exports.deleteAdmin = async (id) => {
   try {
     const { error } = await supabase
-      .from('admins')
+      .from('admin')
       .delete()
       .eq('id', id);
 
