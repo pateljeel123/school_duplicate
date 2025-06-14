@@ -225,6 +225,17 @@ export const userService = {
     }
   },
 
+  // Get all departments
+  getAllDepartments: async () => {
+    try {
+      const response = await adminApi.get("/api/trusty/getdepartments");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      throw error;
+    }
+  },
+
   // Update teacher
   updateTeacher: async (teacherId, teacherData) => {
     try {
@@ -249,6 +260,59 @@ export const userService = {
       return response.data;
     } catch (error) {
       console.error("Error updating student:", error);
+      throw error;
+    }
+  },
+
+  // Update HOD
+  updateHod: async (hodId, hodData) => {
+    try {
+      const response = await adminApi.put(
+        `/api/trusty/updatehod/${hodId}`,
+        hodData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating HOD:", error);
+      throw error;
+    }
+  },
+
+  // Delete teacher
+  deleteTeacher: async (teacherId) => {
+    try {
+      const response = await adminApi.delete(
+        `/api/trusty/deleteteacher/${teacherId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
+      throw error;
+    }
+  },
+
+  // Delete student
+  deleteStudent: async (studentId) => {
+    try {
+      const response = await adminApi.delete(
+        `/api/trusty/deletestudent/${studentId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      throw error;
+    }
+  },
+
+  // Delete HOD
+  deleteHod: async (hodId) => {
+    try {
+      const response = await adminApi.delete(
+        `/api/trusty/deletehod/${hodId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting HOD:", error);
       throw error;
     }
   },

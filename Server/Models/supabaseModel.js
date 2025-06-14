@@ -176,7 +176,7 @@ exports.updateHOD = async (id, updateData) => {
     // Now perform the update
     const { data, error } = await supabase
       .from('hod')
-      .update(updateData)
+      .update(updateData) 
       .eq('id', id)
       .select();
 
@@ -205,7 +205,9 @@ exports.deleteHOD = async (id) => {
       .delete()
       .eq('id', id);
 
-    return { error };
+      const { data, error: authError } = await supabase.auth.admin.deleteUser(id)
+      console.log(data)
+    return { error,authError };
   } catch (error) {
     return { error };
   }
@@ -249,7 +251,10 @@ exports.deleteStudent = async (id) => {
       .delete()
       .eq('id', id);
 
-    return { error };
+      const { data, error: authError } = await supabase.auth.admin.deleteUser(id)
+      console.log(data)
+
+    return { error,authError };
   } catch (error) {
     return { error };
   }
@@ -377,5 +382,26 @@ exports.deleteTeacherApproval = async (id) => {
     return { error };
   } catch (error) {
     return { error };
+  }
+};
+
+// Department related functions
+exports.getDepartments = async () => {
+  try {
+    // Fetch unique departments from the database
+    const { data, error } = await supabase
+      .from('hod')
+      .select('department_expertise')
+      .not('department_expertise', 'is', null);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    // Extract unique departments
+    const departments = [...new Set(data.map(item => item.department_expertise).filter(Boolean))];
+    return { data: departments, error: null };
+  } catch (error) {
+    return { data: null, error };
   }
 };

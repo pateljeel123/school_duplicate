@@ -28,6 +28,7 @@ module.exports.UPDATE_HOD = async (req, res) => {
         const { data, error } = await supabaseModel.updateHOD(id, updateData);
 
         if (error) {
+            
             if (error.message === "HOD not found with this ID") {
                 return res.status(404).json({ message: error.message });
             }
@@ -238,6 +239,21 @@ module.exports.DELETE_ADMIN = async (req, res) => {
         }
 
         return res.status(200).json({ message: "Admin deleted successfully!" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+// Get all departments
+module.exports.GET_DEPARTMENTS = async (req, res) => {
+    try {
+        const { data, error } = await supabaseModel.getDepartments();
+
+        if (error) {
+            return res.status(500).json({ error: "Database error", details: error.message });
+        }
+
+        return res.status(200).json({ departments: data });
     } catch (error) {
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }
