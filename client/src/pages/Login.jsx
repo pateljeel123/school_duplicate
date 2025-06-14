@@ -53,11 +53,18 @@ const Login = ({ onLogin }) => {
         const userId = data.user.id;
         
         // Check user role from database tables
-        const { userRole, userData, multipleRoles, availableRoles } = await checkUserRole(userId);
+        const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
         
         // Check if user has multiple roles
         if (multipleRoles) {
           setError(`Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`);
+          setLoading(false);
+          return;
+        }
+        
+        // Check if teacher status is pending or rejected
+        if (teacherStatus === 'pending' || teacherStatus === 'rejected') {
+          setError(statusMessage);
           setLoading(false);
           return;
         }
@@ -98,11 +105,18 @@ const Login = ({ onLogin }) => {
         const userId = data.user.id;
         
         // Check user role from database tables
-        const { userRole, userData, multipleRoles, availableRoles } = await checkUserRole(userId);
+        const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
         
         // Check if user has multiple roles
         if (multipleRoles) {
           setError(`Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`);
+          setLoading(false);
+          return;
+        }
+        
+        // Check if teacher status is pending or rejected
+        if (teacherStatus === 'pending' || teacherStatus === 'rejected') {
+          setError(statusMessage);
           setLoading(false);
           return;
         }

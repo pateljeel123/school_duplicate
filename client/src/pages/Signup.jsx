@@ -169,6 +169,7 @@ const Signup = () => {
         email,
         phonenumber,
         gender,
+        role: selectedRole, // Add role field to store in database
       };
       
       if (selectedRole === 'student') {
