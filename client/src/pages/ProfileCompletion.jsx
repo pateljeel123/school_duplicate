@@ -15,7 +15,7 @@ const ProfileCompletion = () => {
   
   // Common fields for all roles
   const [fullname, setFullname] = useState('');
-  const [phonenumber, setPhonenumber] = useState('');
+  const [phonenumber, setPhonenumber] = useState(''); 
   const [gender, setGender] = useState('');
   
   // Student specific fields

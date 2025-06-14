@@ -148,6 +148,30 @@ export const checkUserRole = async (userId) => {
   else if (foundRoles.length === 1) {
     userRole = foundRoles[0];
     userData = allRolesData[userRole];
+    
+    // Check if the user is a teacher and verify their approval status
+    if (userRole === 'teacher') {
+      // If teacher status is pending or rejected, don't allow login
+      if (userData.status === 'pending') {
+        return { 
+          userRole: null, 
+          userData: null, 
+          multipleRoles: false,
+          teacherStatus: 'pending',
+          statusMessage: 'Your teacher account is pending approval from HOD. Please wait for approval.'
+        };
+      } else if (userData.status === 'rejected') {
+        return { 
+          userRole: null, 
+          userData: null, 
+          multipleRoles: false,
+          teacherStatus: 'rejected',
+          statusMessage: 'Your teacher account has been rejected. Please contact the HOD for more information.'
+        };
+      }
+      // If status is approved or not set, allow login
+    }
+    
     return { userRole, userData, multipleRoles: false };
   }
   // If no roles found
