@@ -39,6 +39,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           path: `/dashboard/${userRole}/messages`,
         },
         {
+          name: 'Student Analytics',
+          icon: <ChartBarIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/student-analytics`,
+        },
+        {
           name: 'AI Assistant',
           icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/ai-assistant`,
@@ -63,7 +68,7 @@ const Sidebar = ({ userRole, onLogout }) => {
         },
       ];
     }
-    
+
     // For other roles, show all items as before
     const commonItems = [
       {
@@ -71,21 +76,7 @@ const Sidebar = ({ userRole, onLogout }) => {
         icon: <HomeIcon className="w-6 h-6" />,
         path: `/dashboard/${userRole}`,
       },
-      {
-        name: 'Messages',
-        icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
-        path: `/dashboard/${userRole}/messages`,
-      },
-      {
-        name: 'AI Assistant',
-        icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
-        path: `/dashboard/${userRole}/ai-assistant`,
-      },
-      {
-        name: 'Student Analytics',
-        icon: <ChartBarIcon className="w-6 h-6" />,
-        path: `/dashboard/${userRole}/student-analytics`,
-      },
+
     ];
 
     const roleSpecificItems = {
@@ -94,6 +85,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           name: 'Courses',
           icon: <AcademicCapIcon className="w-6 h-6" />,
           path: '/courses',
+        },
+        {
+          name: 'AI Assistant',
+          icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/ai-assistant`,
         },
       ],
       hod: [
@@ -119,11 +115,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: '/dashboard/admin/analytics',
         },
-        {
-          name: 'Settings',
-          icon: <Cog6ToothIcon className="w-6 h-6" />,
-          path: '/dashboard/admin/settings',
-        },
+        // {
+        //   name: 'Settings',
+        //   icon: <Cog6ToothIcon className="w-6 h-6" />,
+        //   path: '/dashboard/admin/settings',
+        // },
       ],
     };
 
@@ -133,7 +129,7 @@ const Sidebar = ({ userRole, onLogout }) => {
   const navItems = getNavItems();
 
   return (
-    <div 
+    <div
       className={`bg-white shadow-md h-screen transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
       {/* Sidebar Header */}
@@ -143,21 +139,21 @@ const Sidebar = ({ userRole, onLogout }) => {
             ScroolPortal
           </Link>
         )}
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1 rounded-full hover:bg-gray-100"
         >
-          <svg 
-            className={`w-6 h-6 text-gray-600 transform ${isCollapsed ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24" 
+          <svg
+            className={`w-6 h-6 text-gray-600 transform ${isCollapsed ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth="2" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
               d={isCollapsed ? "M13 5l7 7-7 7" : "M11 19l-7-7 7-7"}
             />
           </svg>
@@ -168,9 +164,9 @@ const Sidebar = ({ userRole, onLogout }) => {
       <div className="py-4">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path && 
-              (!item.state?.activeTab || 
-               (location.state?.activeTab === item.state?.activeTab));
+            const isActive = location.pathname === item.path &&
+              (!item.state?.activeTab ||
+                (location.state?.activeTab === item.state?.activeTab));
             return (
               <Link
                 key={item.name}

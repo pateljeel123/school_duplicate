@@ -87,15 +87,28 @@ const AdminDashboard = () => {
             // { name: 'Admins', value: totalAdmins },
           ];
 
-          // Create mock data for user activity (in a real app, this would come from an API)
-          const userActivityData = [
-            { name: 'Jan', students: 65, teachers: 45, hods: 12 },
-            { name: 'Feb', students: 75, teachers: 48, hods: 14 },
-            { name: 'Mar', students: 85, teachers: 52, hods: 15 },
-            { name: 'Apr', students: 70, teachers: 55, hods: 13 },
-            { name: 'May', students: 80, teachers: 58, hods: 16 },
-            { name: 'Jun', students: 90, teachers: 60, hods: 18 },
-          ];
+          // Process student data to create class-wise AI usage data
+          const classWiseAIUsage = [];
+
+          // Initialize data structure for classes 5-10
+          for (let i = 5; i <= 10; i++) {
+            classWiseAIUsage.push({
+              class: `Class ${i}`,
+              messageCount: 0,
+              studentCount: 0
+            });
+          }
+
+          // Process student data to calculate message counts by class
+          students.forEach(student => {
+            // Only process students from classes 5-10
+            const studentClass = parseInt(student.std);
+            if (studentClass >= 5 && studentClass <= 10) {
+              const classIndex = studentClass - 5;
+              classWiseAIUsage[classIndex].messageCount += (student.message_count || 0);
+              classWiseAIUsage[classIndex].studentCount += 1;
+            }
+          });
 
           setUserStats({
             totalUsers,
@@ -104,7 +117,7 @@ const AdminDashboard = () => {
             totalHODs,
             // totalAdmins,
             userRoleData,
-            userActivityData,
+            classWiseAIUsage,
           });
         } else {
           // Fallback to mock data if no users were fetched
@@ -128,13 +141,13 @@ const AdminDashboard = () => {
               { name: 'HODs', value: 1 },
               // { name: 'Admins', value: 1 },
             ],
-            userActivityData: [
-              { name: 'Jan', students: 65, teachers: 45, hods: 12 },
-              { name: 'Feb', students: 75, teachers: 48, hods: 14 },
-              { name: 'Mar', students: 85, teachers: 52, hods: 15 },
-              { name: 'Apr', students: 70, teachers: 55, hods: 13 },
-              { name: 'May', students: 80, teachers: 58, hods: 16 },
-              { name: 'Jun', students: 90, teachers: 60, hods: 18 },
+            classWiseAIUsage: [
+              { class: 'Class 5', messageCount: 120, studentCount: 25 },
+              { class: 'Class 6', messageCount: 150, studentCount: 30 },
+              { class: 'Class 7', messageCount: 200, studentCount: 35 },
+              { class: 'Class 8', messageCount: 180, studentCount: 32 },
+              { class: 'Class 9', messageCount: 250, studentCount: 40 },
+              { class: 'Class 10', messageCount: 220, studentCount: 38 },
             ],
           });
         }
@@ -163,13 +176,13 @@ const AdminDashboard = () => {
             { name: 'HODs', value: 1 },
             // { name: 'Admins', value: 1 },
           ],
-          userActivityData: [
-            { name: 'Jan', students: 65, teachers: 45, hods: 12 },
-            { name: 'Feb', students: 75, teachers: 48, hods: 14 },
-            { name: 'Mar', students: 85, teachers: 52, hods: 15 },
-            { name: 'Apr', students: 70, teachers: 55, hods: 13 },
-            { name: 'May', students: 80, teachers: 58, hods: 16 },
-            { name: 'Jun', students: 90, teachers: 60, hods: 18 },
+          classWiseAIUsage: [
+            { class: 'Class 5', messageCount: 120, studentCount: 25 },
+            { class: 'Class 6', messageCount: 150, studentCount: 30 },
+            { class: 'Class 7', messageCount: 200, studentCount: 35 },
+            { class: 'Class 8', messageCount: 180, studentCount: 32 },
+            { class: 'Class 9', messageCount: 250, studentCount: 40 },
+            { class: 'Class 10', messageCount: 220, studentCount: 38 },
           ],
         });
       } finally {
@@ -262,22 +275,7 @@ const AdminDashboard = () => {
           >
             Overview
           </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'users'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-primary'}`}
-          >
-            Users
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-primary'}`}
-          >
-            Analytics
-          </button>
+
           <button
             onClick={() => setActiveTab('logs')}
             className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs'
@@ -369,9 +367,9 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* User Activity */}
+                {/* Class-wise AI Usage */}
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity</h3>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Class-wise AI Usage (Classes 5-10)</h3>
                   <div className="h-64">
                     {loadingUsers ? (
                       <div className="h-full flex items-center justify-center">
@@ -383,15 +381,31 @@ const AdminDashboard = () => {
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={userStats.userActivityData}>
+                        <BarChart
+                          data={userStats.classWiseAIUsage}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          barSize={30}
+                          animationDuration={1000}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
+                          <XAxis dataKey="class" />
+                          <YAxis label={{ value: 'Message Count', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip
+                            formatter={(value, name) => {
+                              if (name === 'messageCount') {
+                                return [`${value} messages`, 'AI Usage'];
+                              }
+                              return [value, name];
+                            }}
+                            labelFormatter={(label) => `${label}`}
+                          />
                           <Legend />
-                          <Bar dataKey="students" fill="#0088FE" name="Students" />
-                          <Bar dataKey="teachers" fill="#00C49F" name="Teachers" />
-                          <Bar dataKey="hods" fill="#FFBB28" name="HODs" />
+                          <Bar
+                            dataKey="messageCount"
+                            fill="#8884d8"
+                            name="AI Usage"
+                            radius={[5, 5, 0, 0]}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -449,172 +463,6 @@ const AdminDashboard = () => {
                         ))}
                       </tbody>
                     </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Users Tab */}
-          {activeTab === 'users' && (
-            <div className="space-y-6">
-              {/* Search and filters */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-grow">
-                    <input
-                      type="text"
-                      placeholder="Search users by name, email, or role..."
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
-                      Add New User
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Users list */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6 border-b">
-                  <h3 className="text-lg font-semibold text-gray-700">Users</h3>
-                </div>
-
-                <div className="overflow-x-auto">
-                  {loadingUsers ? (
-                    <div className="p-8 text-center">
-                      <p className="text-gray-500">Loading users data...</p>
-                    </div>
-                  ) : usersError ? (
-                    <div className="p-8 text-center">
-                      <p className="text-yellow-600">{usersError}</p>
-                    </div>
-                  ) : filteredUsers.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <p className="text-gray-500">No users found matching your search criteria.</p>
-                    </div>
-                  ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredUsers.map((user) => (
-                          <tr key={user.id}>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-                                  {user.name ? user.name.charAt(0) : '?'}
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{user.fullname || 'Unknown'}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{user.email || 'N/A'}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900 capitalize">{user.role || 'N/A'}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                                {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Unknown'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-500">{formatDate(user.lastActive)}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button className="text-primary hover:text-primary-dark mr-3">Edit</button>
-                              <button className="text-red-600 hover:text-red-900">Delete</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Analytics Tab */}
-          {activeTab === 'analytics' && (
-            <div className="space-y-6">
-              {/* User Role Distribution */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Role Distribution</h3>
-                <div className="h-80">
-                  {loadingUsers ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-gray-500">Loading chart data...</p>
-                    </div>
-                  ) : usersError ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-yellow-600">{usersError}</p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={userStats.userRoleData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {userStats.userRoleData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              </div>
-
-              {/* User Activity */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Activity Trend</h3>
-                <div className="h-80">
-                  {loadingUsers ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-gray-500">Loading chart data...</p>
-                    </div>
-                  ) : usersError ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-yellow-600">{usersError}</p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={userStats.userActivityData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="students" fill="#0088FE" name="Students" />
-                        <Bar dataKey="teachers" fill="#00C49F" name="Teachers" />
-                        <Bar dataKey="hods" fill="#FFBB28" name="HODs" />
-                      </BarChart>
-                    </ResponsiveContainer>
                   )}
                 </div>
               </div>
