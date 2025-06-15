@@ -1,104 +1,316 @@
-import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { FaUsers, FaUserGraduate, FaChalkboardTeacher, FaUserTie } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ComposedChart } from 'recharts';
+import { FaUsers, FaUserGraduate, FaChalkboardTeacher, FaUserTie, FaMale, FaFemale, FaBook, FaGraduationCap, FaChartLine } from 'react-icons/fa';
+import { userService } from '../../services/api';
 
 const AdminAnalytics = () => {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'users', 'departments'
+  const [activeTab, setActiveTab] = useState('hod'); // 'hod', 'teacher', 'student'
   
-  // Mock data for user statistics
-  const userStats = {
-    total: 1250,
-    students: 950,
-    teachers: 180,
-    hods: 20,
-    admins: 10,
-    activeUsers: 1100,
-    inactiveUsers: 150,
-    newUsersThisMonth: 75
+  // State for data
+  const [loading, setLoading] = useState(true);
+  const [hodData, setHodData] = useState([]);
+  const [teacherData, setTeacherData] = useState([]);
+  const [studentData, setStudentData] = useState([]);
+  const [departmentData, setDepartmentData] = useState([]);
+  
+  // Derived statistics
+  const [hodStats, setHodStats] = useState({
+    total: 0,
+    totalDepartments: 0,
+    maleHods: 0,
+    femaleHods: 0
+  });
+  
+  const [teacherStats, setTeacherStats] = useState({
+    total: 0,
+    maleTeachers: 0,
+    femaleTeachers: 0
+  });
+  
+  const [studentStats, setStudentStats] = useState({
+    total: 0,
+    maleStudents: 0,
+    femaleStudents: 0
+  });
+
+  // Colors for charts
+  const COLORS = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#3B5249', '#6B818C'];
+  
+  // Fetch data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch HODs
+        const hodsResponse = await userService.getAllHODs();
+        if (hodsResponse && hodsResponse.hodsData) {
+          setHodData(hodsResponse.hodsData);
+          
+          // Calculate HOD statistics
+          const maleHods = hodsResponse.hodsData.filter(hod => hod.gender === 'male').length;
+          const femaleHods = hodsResponse.hodsData.filter(hod => hod.gender === 'female').length;
+          const departments = [...new Set(hodsResponse.hodsData.map(hod => hod.department_expertise))];
+          
+          setHodStats({
+            total: hodsResponse.hodsData.length,
+            totalDepartments: departments.length,
+            maleHods,
+            femaleHods
+          });
+        }
+        
+        // Fetch Teachers
+        const teachersResponse = await userService.getAllTeachers();
+        if (teachersResponse && teachersResponse.teachersData) {
+          setTeacherData(teachersResponse.teachersData);
+          
+          // Calculate Teacher statistics
+          const maleTeachers = teachersResponse.teachersData.filter(teacher => teacher.gender === 'male').length;
+          const femaleTeachers = teachersResponse.teachersData.filter(teacher => teacher.gender === 'female').length;
+          
+          setTeacherStats({
+            total: teachersResponse.teachersData.length,
+            maleTeachers,
+            femaleTeachers
+          });
+        }
+        
+        // Fetch Students
+        const studentsResponse = await userService.getAllStudents();
+        if (studentsResponse && studentsResponse.studentsData) {
+          setStudentData(studentsResponse.studentsData);
+          
+          // Calculate Student statistics
+          const maleStudents = studentsResponse.studentsData.filter(student => student.gender === 'male').length;
+          const femaleStudents = studentsResponse.studentsData.filter(student => student.gender === 'female').length;
+          
+          setStudentStats({
+            total: studentsResponse.studentsData.length,
+            maleStudents,
+            femaleStudents
+          });
+        }
+        
+        // Fetch Departments
+        const departmentsResponse = await userService.getAllDepartments();
+        if (departmentsResponse && departmentsResponse.data) {
+          setDepartmentData(departmentsResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
+  // Prepare chart data
+  const getDepartmentHodDistribution = () => {
+    const departmentCounts = {};
+    
+    hodData.forEach(hod => {
+      const dept = hod.department_expertise || 'Unknown';
+      departmentCounts[dept] = (departmentCounts[dept] || 0) + 1;
+    });
+    
+    return Object.keys(departmentCounts).map(dept => ({
+      name: dept,
+      value: departmentCounts[dept],
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    }));
   };
   
-  // Mock data for user roles distribution
-  const userRolesData = [
-    { name: 'Students', value: userStats.students, color: '#2E86AB' },
-    { name: 'Teachers', value: userStats.teachers, color: '#A23B72' },
-    { name: 'HODs', value: userStats.hods, color: '#F18F01' },
-    { name: 'Admins', value: userStats.admins, color: '#C73E1D' },
-  ];
+  const getQualificationHodDistribution = () => {
+    const qualificationCounts = {};
+    
+    hodData.forEach(hod => {
+      const qualification = hod.highest_qualification || 'Unknown';
+      qualificationCounts[qualification] = (qualificationCounts[qualification] || 0) + 1;
+    });
+    
+    return Object.keys(qualificationCounts).map(qualification => ({
+      name: qualification,
+      count: qualificationCounts[qualification]
+    }));
+  };
   
-  // Mock data for user growth over time
-  const userGrowthData = [
-    { month: 'Jan', users: 980 },
-    { month: 'Feb', users: 1020 },
-    { month: 'Mar', users: 1080 },
-    { month: 'Apr', users: 1120 },
-    { month: 'May', users: 1180 },
-    { month: 'Jun', users: 1250 },
-  ];
+  const getExperienceHodDistribution = () => {
+    const experienceGroups = {
+      '0-5 years': 0,
+      '6-10 years': 0,
+      '11-15 years': 0,
+      '16+ years': 0
+    };
+    
+    hodData.forEach(hod => {
+      const experience = parseInt(hod.experience) || 0;
+      
+      if (experience <= 5) experienceGroups['0-5 years']++;
+      else if (experience <= 10) experienceGroups['6-10 years']++;
+      else if (experience <= 15) experienceGroups['11-15 years']++;
+      else experienceGroups['16+ years']++;
+    });
+    
+    return Object.keys(experienceGroups).map(group => ({
+      name: group,
+      count: experienceGroups[group],
+      average: hodData.length > 0 ? (experienceGroups[group] / hodData.length * 100).toFixed(1) : 0
+    }));
+  };
   
-  // Mock data for department statistics
-  const departmentData = [
-    { name: 'Computer Science', students: 220, teachers: 35, courses: 25 },
-    { name: 'Mathematics', students: 180, teachers: 28, courses: 20 },
-    { name: 'Physics', students: 150, teachers: 22, courses: 18 },
-    { name: 'Chemistry', students: 140, teachers: 20, courses: 15 },
-    { name: 'Biology', students: 130, teachers: 18, courses: 14 },
-    { name: 'English', students: 120, teachers: 15, courses: 12 },
-    { name: 'History', students: 110, teachers: 12, courses: 10 },
-  ];
+  const getSubjectTeacherDistribution = () => {
+    const subjectCounts = {};
+    
+    teacherData.forEach(teacher => {
+      const subject = teacher.subject_expertise || 'Unknown';
+      subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
+    });
+    
+    return Object.keys(subjectCounts).map(subject => ({
+      name: subject,
+      count: subjectCounts[subject]
+    }));
+  };
   
-  // Mock data for system activity
-  const systemActivityData = [
-    { hour: '00:00', logins: 15 },
-    { hour: '04:00', logins: 5 },
-    { hour: '08:00', logins: 80 },
-    { hour: '12:00', logins: 120 },
-    { hour: '16:00', logins: 90 },
-    { hour: '20:00', logins: 40 },
-  ];
+  const getQualificationTeacherDistribution = () => {
+    const qualificationCounts = {};
+    
+    teacherData.forEach(teacher => {
+      const qualification = teacher.qualification || 'Unknown';
+      qualificationCounts[qualification] = (qualificationCounts[qualification] || 0) + 1;
+    });
+    
+    return Object.keys(qualificationCounts).map(qualification => ({
+      name: qualification,
+      count: qualificationCounts[qualification]
+    }));
+  };
   
-  // Mock data for system performance
-  const systemPerformanceData = [
-    { name: 'Response Time', value: 250, unit: 'ms' },
-    { name: 'Uptime', value: 99.98, unit: '%' },
-    { name: 'Error Rate', value: 0.02, unit: '%' },
-    { name: 'API Calls/min', value: 1250, unit: '' },
-  ];
+  const getExperienceTeacherDistribution = () => {
+    const experienceGroups = {
+      '0-5 years': 0,
+      '6-10 years': 0,
+      '11-15 years': 0,
+      '16+ years': 0
+    };
+    
+    teacherData.forEach(teacher => {
+      const experience = parseInt(teacher.experience) || 0;
+      
+      if (experience <= 5) experienceGroups['0-5 years']++;
+      else if (experience <= 10) experienceGroups['6-10 years']++;
+      else if (experience <= 15) experienceGroups['11-15 years']++;
+      else experienceGroups['16+ years']++;
+    });
+    
+    return Object.keys(experienceGroups).map(group => ({
+      name: group,
+      count: experienceGroups[group],
+      average: teacherData.length > 0 ? (experienceGroups[group] / teacherData.length * 100).toFixed(1) : 0
+    }));
+  };
   
-  const COLORS = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#3B5249', '#6B818C'];
+  const getClassStudentDistribution = () => {
+    const classCounts = {};
+    
+    // Only count students from 5th to 12th standard
+    studentData.forEach(student => {
+      const studentClass = student.std || 'Unknown';
+      if (studentClass >= 5 && studentClass <= 12) {
+        classCounts[`Class ${studentClass}`] = (classCounts[`Class ${studentClass}`] || 0) + 1;
+      }
+    });
+    
+    return Object.keys(classCounts).map(className => ({
+      name: className,
+      count: classCounts[className]
+    }));
+  };
+  
+  const getStreamStudentDistribution = () => {
+    const streamCounts = {
+      'Science': 0,
+      'Commerce': 0,
+      'Arts': 0,
+      'General': 0
+    };
+    
+    studentData.forEach(student => {
+      const stream = student.stream || 'General';
+      streamCounts[stream] = (streamCounts[stream] || 0) + 1;
+    });
+    
+    return Object.keys(streamCounts).map(stream => ({
+      name: stream,
+      value: streamCounts[stream],
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    }));
+  };
+  
+  const getChatbotUsageByClass = () => {
+    const classCounts = {};
+    
+    // Only count students from 5th to 12th standard
+    studentData.forEach(student => {
+      const studentClass = student.std || 'Unknown';
+      if (studentClass >= 5 && studentClass <= 12) {
+        classCounts[`Class ${studentClass}`] = (classCounts[`Class ${studentClass}`] || 0) + (student.message_count || 0);
+      }
+    });
+    
+    return Object.keys(classCounts).map(className => ({
+      name: className,
+      messages: classCounts[className]
+    }));
+  };
+  
+  const getChatbotLeaderboard = () => {
+    return [...studentData]
+      .sort((a, b) => (b.message_count || 0) - (a.message_count || 0))
+      .slice(0, 10)
+      .map(student => ({
+        id: student.id,
+        name: student.name || 'Unknown',
+        class: student.std || 'Unknown',
+        messages: student.message_count || 0
+      }));
+  };
   
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Page header */}
       <div className="bg-white shadow-sm p-4 border-b">
-        <h1 className="text-2xl font-bold text-primary">Admin Analytics</h1>
+        <h1 className="text-2xl font-bold text-primary">Admin Analytics Dashboard</h1>
       </div>
       
       {/* Tab navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
+            onClick={() => setActiveTab('hod')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'hod' 
               ? 'text-primary border-b-2 border-primary' 
               : 'text-gray-500 hover:text-primary'}`}
           >
-            System Overview
+            HOD Analytics
           </button>
           <button
-            onClick={() => setActiveTab('users')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'users' 
+            onClick={() => setActiveTab('teacher')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'teacher' 
               ? 'text-primary border-b-2 border-primary' 
               : 'text-gray-500 hover:text-primary'}`}
           >
-            User Analytics
+            Teacher Analytics
           </button>
           <button
-            onClick={() => setActiveTab('departments')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'departments' 
+            onClick={() => setActiveTab('student')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'student' 
               ? 'text-primary border-b-2 border-primary' 
               : 'text-gray-500 hover:text-primary'}`}
           >
-            Department Analytics
+            Student Analytics
           </button>
         </div>
       </div>
@@ -106,261 +318,464 @@ const AdminAnalytics = () => {
       {/* Main content */}
       <div className="flex-grow p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Summary cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
-                  <div className="rounded-full bg-blue-100 p-3 mr-4">
-                    <FaUsers className="text-blue-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700">Total Users</h3>
-                    <p className="text-3xl font-bold text-primary">{userStats.total}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
-                  <div className="rounded-full bg-green-100 p-3 mr-4">
-                    <FaUserGraduate className="text-green-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700">Students</h3>
-                    <p className="text-3xl font-bold text-green-500">{userStats.students}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
-                  <div className="rounded-full bg-purple-100 p-3 mr-4">
-                    <FaChalkboardTeacher className="text-purple-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700">Teachers</h3>
-                    <p className="text-3xl font-bold text-purple-500">{userStats.teachers}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
-                  <div className="rounded-full bg-yellow-100 p-3 mr-4">
-                    <FaUserTie className="text-yellow-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700">HODs</h3>
-                    <p className="text-3xl font-bold text-yellow-500">{userStats.hods}</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* System performance metrics */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">System Performance</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {systemPerformanceData.map((metric, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <h4 className="text-sm text-gray-500">{metric.name}</h4>
-                      <p className="text-2xl font-bold text-primary mt-1">
-                        {metric.value}{metric.unit}
-                      </p>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <>
+              {/* HOD Tab */}
+              {activeTab === 'hod' && (
+                <div className="space-y-6">
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-blue-100 p-3 mr-4">
+                        <FaUserTie className="text-blue-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Total HODs</h3>
+                        <p className="text-3xl font-bold text-primary">{hodStats.total}</p>
+                      </div>
                     </div>
-                  ))}
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-green-100 p-3 mr-4">
+                        <FaBook className="text-green-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Total Departments</h3>
+                        <p className="text-3xl font-bold text-green-500">{hodStats.totalDepartments}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-purple-100 p-3 mr-4">
+                        <FaMale className="text-purple-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Male HODs</h3>
+                        <p className="text-3xl font-bold text-purple-500">{hodStats.maleHods}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-yellow-100 p-3 mr-4">
+                        <FaFemale className="text-yellow-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Female HODs</h3>
+                        <p className="text-3xl font-bold text-yellow-500">{hodStats.femaleHods}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Department-wise HOD Distribution */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Department-wise HOD Distribution</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={getDepartmentHodDistribution()}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {getDepartmentHodDistribution().map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* Qualification-wise HODs */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Qualification-wise HODs</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getQualificationHodDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" name="HODs" fill="#8884d8" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* Experience-wise HOD Grouping */}
+                    <div className="bg-white rounded-lg shadow-md p-6 col-span-1 lg:col-span-2">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Experience-wise HOD Grouping</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart
+                            data={getExperienceHodDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="count" name="HODs" fill="#8884d8" />
+                            <Line yAxisId="right" type="monotone" dataKey="average" name="% of Total" stroke="#ff7300" />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* HOD List */}
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">HOD List</h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qualification</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {hodData.map((hod, index) => (
+                            <tr key={hod.id || index}>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.fullname || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.department_expertise || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.highest_qualification || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.gender || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.experience || 'N/A'} years</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{hod.email || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* System activity chart */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">System Activity (Logins by Hour)</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={systemActivityData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="hour" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="logins" name="User Logins" fill="#2E86AB" />
-                    </BarChart>
-                  </ResponsiveContainer>
+              {/* Teacher Tab */}
+              {activeTab === 'teacher' && (
+                <div className="space-y-6">
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-blue-100 p-3 mr-4">
+                        <FaChalkboardTeacher className="text-blue-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Total Teachers</h3>
+                        <p className="text-3xl font-bold text-primary">{teacherStats.total}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-purple-100 p-3 mr-4">
+                        <FaMale className="text-purple-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Male Teachers</h3>
+                        <p className="text-3xl font-bold text-purple-500">{teacherStats.maleTeachers}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-yellow-100 p-3 mr-4">
+                        <FaFemale className="text-yellow-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Female Teachers</h3>
+                        <p className="text-3xl font-bold text-yellow-500">{teacherStats.femaleTeachers}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Subject-wise Teacher Count */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Subject-wise Teacher Count</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getSubjectTeacherDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                            layout="vertical"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" />
+                            <YAxis dataKey="name" type="category" width={100} />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" name="Teachers" fill="#8884d8" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* Qualification-wise Teachers */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Qualification-wise Teachers</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getQualificationTeacherDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" name="Teachers" fill="#A23B72" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* Experience-wise Teacher Grouping */}
+                    <div className="bg-white rounded-lg shadow-md p-6 col-span-1 lg:col-span-2">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Experience-wise Teacher Grouping</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart
+                            data={getExperienceTeacherDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="count" name="Teachers" fill="#A23B72" />
+                            <Line yAxisId="right" type="monotone" dataKey="average" name="% of Total" stroke="#ff7300" />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Teacher List */}
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Teacher List</h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qualification</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {teacherData.map((teacher, index) => (
+                            <tr key={teacher.id || index}>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.name || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.subject_expertise || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.qualification || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.gender || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.experience || 'N/A'} years</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.email || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* User growth trend */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Growth Trend</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={userGrowthData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis domain={[900, 'auto']} />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="users" name="Total Users" stroke="#A23B72" activeDot={{ r: 8 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+              {/* Student Tab */}
+              {activeTab === 'student' && (
+                <div className="space-y-6">
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-blue-100 p-3 mr-4">
+                        <FaUserGraduate className="text-blue-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Total Students</h3>
+                        <p className="text-3xl font-bold text-primary">{studentStats.total}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-purple-100 p-3 mr-4">
+                        <FaMale className="text-purple-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Male Students</h3>
+                        <p className="text-3xl font-bold text-purple-500">{studentStats.maleStudents}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center">
+                      <div className="rounded-full bg-yellow-100 p-3 mr-4">
+                        <FaFemale className="text-yellow-500 text-xl" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">Female Students</h3>
+                        <p className="text-3xl font-bold text-yellow-500">{studentStats.femaleStudents}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Class-wise Student Count */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Class-wise Student Count (5th-12th)</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getClassStudentDistribution()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" name="Students" fill="#2E86AB" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* Stream-wise Student Distribution */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">Stream-wise Student Distribution</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={getStreamStudentDistribution()}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {getStreamStudentDistribution().map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* AI Chatbot Usage by Classes */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">AI Chatbot Usage by Classes</h3>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getChatbotUsageByClass()}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="messages" name="Messages" fill="#F18F01" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    
+                    {/* AI Chatbot Usage Leaderboard */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4">AI Chatbot Usage Leaderboard (Top 10)</h3>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Messages</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {getChatbotLeaderboard().map((student, index) => (
+                              <tr key={student.id || index}>
+                                <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">Class {student.class}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{student.messages}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Student List */}
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Student List</h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stream</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Messages</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {studentData.map((student, index) => (
+                            <tr key={student.id || index}>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.name || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">Class {student.std || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.gender || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.stream || 'General'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.message_count || 0}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.email || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Users Tab */}
-          {activeTab === 'users' && (
-            <div className="space-y-6">
-              {/* User statistics cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Users</h3>
-                  <p className="text-3xl font-bold text-primary">{userStats.total}</p>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Active Users</h3>
-                  <p className="text-3xl font-bold text-green-500">{userStats.activeUsers}</p>
-                  <p className="text-sm text-gray-500 mt-1">{Math.round((userStats.activeUsers / userStats.total) * 100)}% of total</p>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Inactive Users</h3>
-                  <p className="text-3xl font-bold text-red-500">{userStats.inactiveUsers}</p>
-                  <p className="text-sm text-gray-500 mt-1">{Math.round((userStats.inactiveUsers / userStats.total) * 100)}% of total</p>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">New This Month</h3>
-                  <p className="text-3xl font-bold text-blue-500">{userStats.newUsersThisMonth}</p>
-                  <p className="text-sm text-gray-500 mt-1">+{Math.round((userStats.newUsersThisMonth / userStats.total) * 100)}% growth</p>
-                </div>
-              </div>
-              
-              {/* User roles distribution */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Roles Distribution</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={userRolesData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {userRolesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              
-              {/* User growth trend */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">User Growth Trend</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={userGrowthData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis domain={[900, 'auto']} />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="users" name="Total Users" stroke="#A23B72" activeDot={{ r: 8 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Departments Tab */}
-          {activeTab === 'departments' && (
-            <div className="space-y-6">
-              {/* Department summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Departments</h3>
-                  <p className="text-3xl font-bold text-primary">{departmentData.length}</p>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Courses</h3>
-                  <p className="text-3xl font-bold text-green-500">
-                    {departmentData.reduce((sum, dept) => sum + dept.courses, 0)}
-                  </p>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Avg. Students per Dept</h3>
-                  <p className="text-3xl font-bold text-blue-500">
-                    {Math.round(departmentData.reduce((sum, dept) => sum + dept.students, 0) / departmentData.length)}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Department comparison chart */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Department Comparison</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={departmentData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="students" name="Students" fill="#2E86AB" />
-                      <Bar dataKey="teachers" name="Teachers" fill="#A23B72" />
-                      <Bar dataKey="courses" name="Courses" fill="#F18F01" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              
-              {/* Department student distribution */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Student Distribution by Department</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={departmentData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="students"
-                      >
-                        {departmentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
