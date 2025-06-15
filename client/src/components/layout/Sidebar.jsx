@@ -130,7 +130,7 @@ const Sidebar = ({ userRole, onLogout }) => {
 
   return (
     <div
-      className={`bg-white shadow-md h-screen transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
+      className={`bg-white shadow-md h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4 border-b">
@@ -189,7 +189,7 @@ const Sidebar = ({ userRole, onLogout }) => {
       </div>
 
       {/* Logout Button */}
-      <div className="absolute bottom-0 w-full p-4 border-t">
+      <div className="w-full p-4 border-t mt-auto">
         <button
           onClick={onLogout}
           className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-4'} py-2 w-full text-gray-700 hover:bg-gray-100 rounded-md`}
