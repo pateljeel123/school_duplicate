@@ -29,43 +29,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           path: `/dashboard/${userRole}/lesson-planning`,
         },
         {
-          name: 'Courses',
-          icon: <AcademicCapIcon className="w-6 h-6" />,
-          path: '/courses',
-        },
-        {
-          name: 'Messages',
-          icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}/messages`,
-        },
-        {
-          name: 'Student Analytics',
+          name: 'Analytics',
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/student-analytics`,
         },
-        {
-          name: 'AI Assistant',
-          icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}/ai-assistant`,
-        },
-        {
-          name: 'Performance',
-          icon: <ChartBarIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}/student-analytics`,
-          state: { activeTab: 'performance' }
-        },
-        {
-          name: 'Attendance',
-          icon: <UserGroupIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}/student-analytics`,
-          state: { activeTab: 'attendance' }
-        },
-        {
-          name: 'Engagement',
-          icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}/student-analytics`,
-          state: { activeTab: 'engagement' }
-        },
+
       ];
     }
 
@@ -94,15 +62,15 @@ const Sidebar = ({ userRole, onLogout }) => {
       ],
       hod: [
         {
-          name: 'Teachers',
-          icon: <UserGroupIcon className="w-6 h-6" />,
-          path: '/dashboard/hod/teachers',
-        },
-        {
           name: 'Analytics',
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: '/dashboard/hod/analytics',
         },
+        {
+          name: 'Teachers',
+          icon: <UserGroupIcon className="w-6 h-6" />,
+          path: '/dashboard/hod/teachers',
+        }
       ],
       admin: [
         {

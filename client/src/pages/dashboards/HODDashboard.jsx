@@ -2,438 +2,447 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { userService } from '../../services/api';
 
-const HODDashboard = () => {
+const AdminDashboard = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // State for teachers data
-  const [teachers, setTeachers] = useState([]);
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
-  const [teachersError, setTeachersError] = useState(null);
-  
-  // State for department data
-  const [departmentData, setDepartmentData] = useState(null);
-  const [loadingDepartment, setLoadingDepartment] = useState(false);
-  const [departmentError, setDepartmentError] = useState(null);
-  
-  // State for analytics data
-  const [analyticsData, setAnalyticsData] = useState({
-    performance: [],
-    attendance: [],
-    subjects: [],
+
+  // State for users data
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+
+  // State for user statistics
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalHODs: 0,
+    totalAdmins: 0,
+    userRoleData: [],
+    userActivityData: [],
   });
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [analyticsError, setAnalyticsError] = useState(null);
-  
+
+  // State for system logs
+  const [systemLogs, setSystemLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState(null);
+
+  // State for search query
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-  
-  // Fetch teachers data when component mounts
+
+  // Fetch users data when component mounts
   useEffect(() => {
-    const fetchTeachers = async () => {
-      setLoadingTeachers(true);
-      setTeachersError(null);
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      setUsersError(null);
       try {
-        const response = await userService.getAllTeachers();
-        if (response && response.data && response.data.length > 0) {
-          setTeachers(response.data);
-        } else {
-          // Fallback to mock data if API returns empty
-          setTeachers([
-            { id: 1, name: 'John Smith', subject: 'Mathematics', experience: '8 years', performance: 92, students: 45 },
-            { id: 2, name: 'Sarah Johnson', subject: 'Science', experience: '5 years', performance: 88, students: 38 },
-            { id: 3, name: 'Michael Brown', subject: 'English', experience: '10 years', performance: 95, students: 42 },
-            { id: 4, name: 'Emily Davis', subject: 'History', experience: '3 years', performance: 82, students: 35 },
-            { id: 5, name: 'Robert Wilson', subject: 'Geography', experience: '7 years', performance: 90, students: 40 },
-          ]);
-        }
-      } catch (err) {
-        console.error('Error fetching teachers data:', err);
-        setTeachersError('Failed to load teachers data. Using sample data instead.');
-        
-        // Fallback to mock data
-        setTeachers([
-          { id: 1, name: 'John Smith', subject: 'Mathematics', experience: '8 years', performance: 92, students: 45 },
-          { id: 2, name: 'Sarah Johnson', subject: 'Science', experience: '5 years', performance: 88, students: 38 },
-          { id: 3, name: 'Michael Brown', subject: 'English', experience: '10 years', performance: 95, students: 42 },
-          { id: 4, name: 'Emily Davis', subject: 'History', experience: '3 years', performance: 82, students: 35 },
-          { id: 5, name: 'Robert Wilson', subject: 'Geography', experience: '7 years', performance: 90, students: 40 },
+        // Fetch all types of users
+        const studentsPromise = userService.getAllStudents();
+        const teachersPromise = userService.getAllTeachers();
+        const hodsPromise = userService.getAllHODs();
+        // const adminsPromise = userService.getAdmins();
+
+        const [studentsRes, teachersRes, hodsRes, adminsRes] = await Promise.allSettled([
+          studentsPromise,
+          teachersPromise,
+          hodsPromise,
+          // adminsPromise
         ]);
-      } finally {
-        setLoadingTeachers(false);
-      }
-    };
-    
-    fetchTeachers();
-  }, []);
-  
-  // Fetch department data when component mounts
-  useEffect(() => {
-    const fetchDepartmentData = async () => {
-      setLoadingDepartment(true);
-      setDepartmentError(null);
-      try {
-        // In a real app, you would fetch the current HOD's department data
-        const response = await userService.getDepartmentData();
-        if (response && response.data) {
-          setDepartmentData(response.data);
+
+        // Extract data or use empty arrays if request failed
+        const students = studentsRes.status === 'fulfilled' && studentsRes.value?.studentsData ? studentsRes.value.studentsData : [];
+        const teachers = teachersRes.status === 'fulfilled' && teachersRes.value?.teachersData ? teachersRes.value.teachersData : [];
+        const hods = hodsRes.status === 'fulfilled' && hodsRes.value?.hodsData ? hodsRes.value.hodsData : [];
+        // const admins = adminsRes.status === 'fulfilled' && adminsRes.value?.data ? adminsRes.value.data : [];
+
+        // Combine all users
+        const allUsers = [
+          ...students.map(s => ({ ...s, role: 'student' })),
+          ...teachers.map(t => ({ ...t, role: 'teacher' })),
+          ...hods.map(h => ({ ...h, role: 'hod' })),
+          // ...admins.map(a => ({ ...a, role: 'admin' }))
+        ];
+        console.log(allUsers)
+        if (allUsers.length > 0) {
+
+          setUsers(allUsers);
+
+          // Calculate user statistics
+
+          const totalStudents = students.length;
+          const totalTeachers = teachers.length;
+          const totalHODs = hods.length;
+          // const totalAdmins = admins.length;
+          const totalUsers = totalStudents + totalTeachers + totalHODs;
+
+
+          // Create data for role distribution chart
+          const userRoleData = [
+            { name: 'Students', value: totalStudents },
+            { name: 'Teachers', value: totalTeachers }
+            // { name: 'Admins', value: totalAdmins },
+          ];
+
+          // Process student data to create class-wise AI usage data
+          const classWiseAIUsage = [];
+
+          // Initialize data structure for classes 5-10
+          for (let i = 5; i <= 10; i++) {
+            classWiseAIUsage.push({
+              class: `Class ${i}`,
+              messageCount: 0,
+              studentCount: 0
+            });
+          }
+
+          // Process student data to calculate message counts by class
+          students.forEach(student => {
+            // Only process students from classes 5-10
+            const studentClass = parseInt(student.std);
+            if (studentClass >= 5 && studentClass <= 10) {
+              const classIndex = studentClass - 5;
+              classWiseAIUsage[classIndex].messageCount += (student.message_count || 0);
+              classWiseAIUsage[classIndex].studentCount += 1;
+            }
+          });
+
+          setUserStats({
+            totalUsers,
+            totalStudents,
+            totalTeachers,
+            totalHODs,
+            // totalAdmins,
+            userRoleData,
+            classWiseAIUsage,
+          });
         } else {
-          // Fallback to mock data if API returns empty
-          setDepartmentData({
-            id: 1,
-            name: 'Science Department',
-            teachersCount: 12,
-            studentsCount: 450,
-            performance: 87,
-            attendance: 92,
-            subjects: [
-              { name: 'Physics', teachersCount: 3, studentsCount: 120 },
-              { name: 'Chemistry', teachersCount: 3, studentsCount: 115 },
-              { name: 'Biology', teachersCount: 4, studentsCount: 135 },
-              { name: 'Environmental Science', teachersCount: 2, studentsCount: 80 },
+          // Fallback to mock data if no users were fetched
+          setUsers([
+            { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
+            { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'teacher', status: 'active', lastActive: '2023-06-15T09:45:00Z' },
+            { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'hod', status: 'active', lastActive: '2023-06-14T16:20:00Z' },
+            // { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
+            { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
+          ]);
+
+          setUserStats({
+            totalUsers: 5,
+            totalStudents: 2,
+            totalTeachers: 1,
+            totalHODs: 1,
+            // totalAdmins: 1,
+            userRoleData: [
+              { name: 'Students', value: 2 },
+              { name: 'Teachers', value: 1 },
+              { name: 'HODs', value: 1 },
+              // { name: 'Admins', value: 1 },
+            ],
+            classWiseAIUsage: [
+              { class: 'Class 5', messageCount: 120, studentCount: 25 },
+              { class: 'Class 6', messageCount: 150, studentCount: 30 },
+              { class: 'Class 7', messageCount: 200, studentCount: 35 },
+              { class: 'Class 8', messageCount: 180, studentCount: 32 },
+              { class: 'Class 9', messageCount: 250, studentCount: 40 },
+              { class: 'Class 10', messageCount: 220, studentCount: 38 },
             ],
           });
         }
       } catch (err) {
-        console.error('Error fetching department data:', err);
-        setDepartmentError('Failed to load department data. Using sample data instead.');
-        
+        console.error('Error fetching users data:', err);
+        setUsersError('Failed to load users data. Using sample data instead.');
+
         // Fallback to mock data
-        setDepartmentData({
-          id: 1,
-          name: 'Science Department',
-          teachersCount: 12,
-          studentsCount: 450,
-          performance: 87,
-          attendance: 92,
-          subjects: [
-            { name: 'Physics', teachersCount: 3, studentsCount: 120 },
-            { name: 'Chemistry', teachersCount: 3, studentsCount: 115 },
-            { name: 'Biology', teachersCount: 4, studentsCount: 135 },
-            { name: 'Environmental Science', teachersCount: 2, studentsCount: 80 },
+        setUsers([
+          { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'student', status: 'active', lastActive: '2023-06-15T10:30:00Z' },
+          { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'teacher', status: 'active', lastActive: '2023-06-15T09:45:00Z' },
+          { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'hod', status: 'active', lastActive: '2023-06-14T16:20:00Z' },
+          { id: 4, name: 'Emily Davis', email: 'emily.davis@example.com', role: 'admin', status: 'active', lastActive: '2023-06-15T11:10:00Z' },
+          { id: 5, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'student', status: 'inactive', lastActive: '2023-06-10T14:30:00Z' },
+        ]);
+
+        setUserStats({
+          totalUsers: 5,
+          totalStudents: 2,
+          totalTeachers: 1,
+          totalHODs: 1,
+          // totalAdmins: 1,
+          userRoleData: [
+            { name: 'Students', value: 2 },
+            { name: 'Teachers', value: 1 },
+            { name: 'HODs', value: 1 },
+            // { name: 'Admins', value: 1 },
+          ],
+          classWiseAIUsage: [
+            { class: 'Class 5', messageCount: 120, studentCount: 25 },
+            { class: 'Class 6', messageCount: 150, studentCount: 30 },
+            { class: 'Class 7', messageCount: 200, studentCount: 35 },
+            { class: 'Class 8', messageCount: 180, studentCount: 32 },
+            { class: 'Class 9', messageCount: 250, studentCount: 40 },
+            { class: 'Class 10', messageCount: 220, studentCount: 38 },
           ],
         });
       } finally {
-        setLoadingDepartment(false);
+        setLoadingUsers(false);
       }
     };
-    
-    fetchDepartmentData();
-  }, []);
-  
-  // Prepare analytics data when department data is available
-  useEffect(() => {
-    if (departmentData && teachers.length > 0) {
-      setLoadingAnalytics(true);
-      setAnalyticsError(null);
+
+    // Fetch system logs (mock data for now)
+    const fetchSystemLogs = async () => {
+      setLoadingLogs(true);
+      setLogsError(null);
       try {
-        // In a real app, you might fetch additional analytics data
-        // For now, we'll use the data we already have
-        
-        // Prepare performance data (last 5 months)
-        const performanceData = [
-          { name: 'Jan', score: Math.floor(Math.random() * 15) + 75 },
-          { name: 'Feb', score: Math.floor(Math.random() * 15) + 75 },
-          { name: 'Mar', score: Math.floor(Math.random() * 15) + 75 },
-          { name: 'Apr', score: Math.floor(Math.random() * 15) + 75 },
-          { name: 'May', score: departmentData.performance },
-        ];
-        
-        // Prepare attendance data (last 5 months)
-        const attendanceData = [
-          { name: 'Jan', rate: Math.floor(Math.random() * 10) + 85 },
-          { name: 'Feb', rate: Math.floor(Math.random() * 10) + 85 },
-          { name: 'Mar', rate: Math.floor(Math.random() * 10) + 85 },
-          { name: 'Apr', rate: Math.floor(Math.random() * 10) + 85 },
-          { name: 'May', rate: departmentData.attendance },
-        ];
-        
-        // Prepare subject data from department
-        const subjectData = departmentData.subjects.map(subject => ({
-          name: subject.name,
-          students: subject.studentsCount,
-          teachers: subject.teachersCount
-        }));
-        
-        setAnalyticsData({
-          performance: performanceData,
-          attendance: attendanceData,
-          subjects: subjectData,
-        });
+        // In a real app, you would fetch logs from an API
+        // const response = await logsService.getSystemLogs();
+        // setSystemLogs(response.data);
+
+        // Using mock data for now
+        setSystemLogs([
+          { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
+          { id: 2, type: 'update', user: 'Emily Davis', timestamp: '2023-06-15T11:15:00Z', details: 'Updated system settings' },
+          { id: 3, type: 'create', user: 'Emily Davis', timestamp: '2023-06-15T11:20:00Z', details: 'Created new teacher account' },
+          { id: 4, type: 'login', user: 'Jane Smith', timestamp: '2023-06-15T09:45:00Z', details: 'Teacher login successful' },
+          { id: 5, type: 'error', user: 'System', timestamp: '2023-06-15T08:30:00Z', details: 'Database backup failed' },
+        ]);
       } catch (err) {
-        console.error('Error preparing analytics data:', err);
-        setAnalyticsError('Failed to prepare analytics data.');
+        console.error('Error fetching system logs:', err);
+        setLogsError('Failed to load system logs. Using sample data instead.');
+
+        // Fallback to mock data
+        setSystemLogs([
+          { id: 1, type: 'login', user: 'Emily Davis', timestamp: '2023-06-15T11:10:00Z', details: 'Admin login successful' },
+          { id: 2, type: 'update', user: 'Emily Davis', timestamp: '2023-06-15T11:15:00Z', details: 'Updated system settings' },
+          { id: 3, type: 'create', user: 'Emily Davis', timestamp: '2023-06-15T11:20:00Z', details: 'Created new teacher account' },
+          { id: 4, type: 'login', user: 'Jane Smith', timestamp: '2023-06-15T09:45:00Z', details: 'Teacher login successful' },
+          { id: 5, type: 'error', user: 'System', timestamp: '2023-06-15T08:30:00Z', details: 'Database backup failed' },
+        ]);
       } finally {
-        setLoadingAnalytics(false);
+        setLoadingLogs(false);
       }
-    }
-  }, [departmentData, teachers]);
-  
+    };
+
+    fetchUsers();
+    fetchSystemLogs();
+  }, []);
+
+  // Filter users based on search query
+  const filteredUsers = users.filter(user =>
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
+  };
+
+  // Get status color
+  const getStatusColor = (status) => {
+    if (status === 'active') return 'bg-green-100 text-green-800';
+    if (status === 'inactive') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  // Get log type color
+  const getLogTypeColor = (type) => {
+    if (type === 'login') return 'bg-blue-100 text-blue-800';
+    if (type === 'update') return 'bg-yellow-100 text-yellow-800';
+    if (type === 'create') return 'bg-green-100 text-green-800';
+    if (type === 'error') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Dashboard header */}
       <div className="bg-white shadow-sm p-4 border-b">
         <h1 className="text-2xl font-bold text-primary">HOD Dashboard</h1>
       </div>
-      
+
       {/* Tab navigation */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
-              ? 'text-primary border-b-2 border-primary' 
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
             Overview
           </button>
+
           <button
-            onClick={() => setActiveTab('teachers')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'teachers' 
-              ? 'text-primary border-b-2 border-primary' 
+            onClick={() => setActiveTab('logs')}
+            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs'
+              ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
-            Teachers
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
-              ? 'text-primary border-b-2 border-primary' 
-              : 'text-gray-500 hover:text-primary'}`}
-          >
-            Analytics
+            System Logs
           </button>
         </div>
       </div>
-      
+
       {/* Main content */}
       <div className="flex-grow p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {loadingDepartment ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-gray-500">Loading department data...</p>
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Students</h3>
+                  <p className="mt-2 text-3xl font-bold text-blue-600">{userStats.totalStudents}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Registered students</span>
+                  </div>
                 </div>
-              ) : departmentError ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-yellow-600">{departmentError}</p>
+
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase">Teachers</h3>
+                  <p className="mt-2 text-3xl font-bold text-green-600">{userStats.totalTeachers}</p>
+                  <div className="mt-2 flex items-center text-sm text-gray-600">
+                    <span>Registered teachers</span>
+                  </div>
                 </div>
-              ) : !departmentData ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-gray-500">No department data available.</p>
-                </div>
-              ) : (
-                <>
-                  {/* Department info and summary cards */}
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                      <div className="mb-4 md:mb-0">
-                        <h2 className="text-xl font-semibold text-gray-800">{departmentData.name}</h2>
-                        <p className="text-gray-600">Department Overview</p>
+
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* User Role Distribution */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">User Role Distribution</h3>
+                  <div className="h-64">
+                    {loadingUsers ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
                       </div>
-                      <div className="flex flex-wrap gap-4">
-                        <div className="text-center px-4 py-2 bg-blue-50 rounded-lg">
-                          <p className="text-sm text-gray-500">Teachers</p>
-                          <p className="text-xl font-bold text-blue-600">{departmentData.teachersCount}</p>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-green-50 rounded-lg">
-                          <p className="text-sm text-gray-500">Students</p>
-                          <p className="text-xl font-bold text-green-600">{departmentData.studentsCount}</p>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-purple-50 rounded-lg">
-                          <p className="text-sm text-gray-500">Performance</p>
-                          <p className="text-xl font-bold text-purple-600">{departmentData.performance}%</p>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-yellow-50 rounded-lg">
-                          <p className="text-sm text-gray-500">Attendance</p>
-                          <p className="text-xl font-bold text-yellow-600">{departmentData.attendance}%</p>
-                        </div>
+                    ) : usersError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{usersError}</p>
                       </div>
-                    </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={userStats.userRoleData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {userStats.userRoleData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
-                  
-                  {/* Subject breakdown */}
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-6 border-b">
-                      <h3 className="text-lg font-semibold text-gray-700">Subject Breakdown</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teachers</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teacher-Student Ratio</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {departmentData.subjects.map((subject, index) => (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{subject.name}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900">{subject.teachersCount}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900">{subject.studentsCount}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900">1:{Math.round(subject.studentsCount / subject.teachersCount)}</div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                </div>
+
+                {/* Class-wise AI Usage */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Class-wise AI Usage (Classes 5-10)</h3>
+                  <div className="h-64">
+                    {loadingUsers ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-gray-500">Loading chart data...</p>
+                      </div>
+                    ) : usersError ? (
+                      <div className="h-full flex items-center justify-center">
+                        <p className="text-yellow-600">{usersError}</p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={userStats.classWiseAIUsage}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          barSize={30}
+                          animationDuration={1000}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="class" />
+                          <YAxis label={{ value: 'Message Count', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip
+                            formatter={(value, name) => {
+                              if (name === 'messageCount') {
+                                return [`${value} messages`, 'AI Usage'];
+                              }
+                              return [value, name];
+                            }}
+                            labelFormatter={(label) => `${label}`}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="messageCount"
+                            fill="#8884d8"
+                            name="AI Usage"
+                            radius={[5, 5, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
-                  
-                  {/* Top performing teachers */}
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-6 border-b">
-                      <h3 className="text-lg font-semibold text-gray-700">Top Performing Teachers</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                      {loadingTeachers ? (
-                        <div className="p-8 text-center">
-                          <p className="text-gray-500">Loading teachers data...</p>
-                        </div>
-                      ) : teachersError ? (
-                        <div className="p-8 text-center">
-                          <p className="text-yellow-600">{teachersError}</p>
-                        </div>
-                      ) : teachers.length === 0 ? (
-                        <div className="p-8 text-center">
-                          <p className="text-gray-500">No teachers data available.</p>
-                        </div>
-                      ) : (
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {/* Sort teachers by performance and show top 3 */}
-                            {[...teachers]
-                              .sort((a, b) => b.performance - a.performance)
-                              .slice(0, 3)
-                              .map((teacher) => (
-                                <tr key={teacher.id}>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{teacher.subject}</div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{teacher.experience}</div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                      <span className="text-sm font-medium text-gray-900 mr-2">{teacher.performance}%</span>
-                                      <div className="w-24 bg-gray-200 rounded-full h-2.5">
-                                        <div 
-                                          className={`h-2.5 rounded-full ${teacher.performance >= 90 ? 'bg-green-600' : teacher.performance >= 80 ? 'bg-blue-600' : 'bg-yellow-600'}`}
-                                          style={{ width: `${teacher.performance}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{teacher.students}</div>
-                                  </td>
-                                </tr>
-                              ))}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          
-          {/* Teachers Tab */}
-          {activeTab === 'teachers' && (
-            <div className="space-y-6">
+                </div>
+              </div>
+
+              {/* Recent System Logs */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6 border-b flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-700">All Teachers</h3>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Search teachers..."
-                      className="px-3 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <button className="bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary-dark">
-                      Search
-                    </button>
-                  </div>
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">Recent System Logs</h3>
                 </div>
-                
+
                 <div className="overflow-x-auto">
-                  {loadingTeachers ? (
+                  {loadingLogs ? (
                     <div className="p-8 text-center">
-                      <p className="text-gray-500">Loading teachers data...</p>
+                      <p className="text-gray-500">Loading system logs...</p>
                     </div>
-                  ) : teachersError ? (
+                  ) : logsError ? (
                     <div className="p-8 text-center">
-                      <p className="text-yellow-600">{teachersError}</p>
+                      <p className="text-yellow-600">{logsError}</p>
                     </div>
-                  ) : teachers.length === 0 ? (
+                  ) : systemLogs.length === 0 ? (
                     <div className="p-8 text-center">
-                      <p className="text-gray-500">No teachers data available.</p>
+                      <p className="text-gray-500">No system logs found.</p>
                     </div>
                   ) : (
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {teachers.map((teacher) => (
-                          <tr key={teacher.id}>
+                        {systemLogs.slice(0, 5).map((log) => (
+                          <tr key={log.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogTypeColor(log.type)}`}>
+                                {log.type.charAt(0).toUpperCase() + log.type.slice(1)}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{teacher.subject}</div>
+                              <div className="text-sm text-gray-900">{log.user}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{teacher.experience}</div>
+                              <div className="text-sm text-gray-500">{formatDate(log.timestamp)}</div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <span className="text-sm font-medium text-gray-900 mr-2">{teacher.performance}%</span>
-                                <div className="w-24 bg-gray-200 rounded-full h-2.5">
-                                  <div 
-                                    className={`h-2.5 rounded-full ${teacher.performance >= 90 ? 'bg-green-600' : teacher.performance >= 80 ? 'bg-blue-600' : 'bg-yellow-600'}`}
-                                    style={{ width: `${teacher.performance}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{teacher.students}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button className="text-primary hover:text-primary-dark mr-3">View</button>
-                              <button className="text-gray-600 hover:text-gray-900">Message</button>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">{log.details}</div>
                             </td>
                           </tr>
                         ))}
@@ -444,73 +453,63 @@ const HODDashboard = () => {
               </div>
             </div>
           )}
-          
-          {/* Analytics Tab */}
-          {activeTab === 'analytics' && (
+
+          {/* Logs Tab */}
+          {activeTab === 'logs' && (
             <div className="space-y-6">
-              {loadingAnalytics ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-gray-500">Loading analytics data...</p>
+              {/* System Logs */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-6 border-b">
+                  <h3 className="text-lg font-semibold text-gray-700">System Logs</h3>
                 </div>
-              ) : analyticsError ? (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <p className="text-yellow-600">{analyticsError}</p>
+
+                <div className="overflow-x-auto">
+                  {loadingLogs ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">Loading system logs...</p>
+                    </div>
+                  ) : logsError ? (
+                    <div className="p-8 text-center">
+                      <p className="text-yellow-600">{logsError}</p>
+                    </div>
+                  ) : systemLogs.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-gray-500">No system logs found.</p>
+                    </div>
+                  ) : (
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {systemLogs.map((log) => (
+                          <tr key={log.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogTypeColor(log.type)}`}>
+                                {log.type.charAt(0).toUpperCase() + log.type.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{log.user}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">{formatDate(log.timestamp)}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">{log.details}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
-              ) : (
-                <>
-                  {/* Performance Chart */}
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Department Performance Trend</h3>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.performance}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis domain={[0, 100]} />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="score" fill="#8884d8" name="Performance Score" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                  {/* Attendance Chart */}
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Department Attendance Trend</h3>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.attendance}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis domain={[0, 100]} />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="rate" fill="#82ca9d" name="Attendance Rate" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                  {/* Subject Distribution */}
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Subject Distribution</h3>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analyticsData.subjects}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="students" fill="#0088FE" name="Students" />
-                          <Bar dataKey="teachers" fill="#00C49F" name="Teachers" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -519,4 +518,4 @@ const HODDashboard = () => {
   );
 };
 
-export default HODDashboard;
+export default AdminDashboard;
