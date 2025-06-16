@@ -50,7 +50,7 @@ const AIAssistant = () => {
     
     try {
       // Call backend API
-      const response = await axios.post('http://localhost:5000/chat', {
+      const response = await axios.post('http://localhost:5000/api/chat/student', {
         message: newMessage
       });
       

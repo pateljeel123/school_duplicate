@@ -46,7 +46,7 @@ module.exports.UPDATE_HOD = async (req, res) => {
 
 module.exports.DELETE_HOD = async (req, res) => {
     const { id } = req.params;
-
+    
     if (!id) {
         return res.status(400).json({ message: "Please provide a HOD ID to delete!" });
     }

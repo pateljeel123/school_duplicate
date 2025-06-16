@@ -74,9 +74,29 @@ const TeacherDashboard = () => {
       setLoadingStudents(true);
       setStudentsError(null);
       try {
-        const response = await userService.getStudents();
-        if (response && response.data && response.data.length > 0) {
-          setStudents(response.data);
+        // Use getAllStudents method which fetches from the Supabase database
+        const response = await userService.getAllStudents();
+        if (response && response.studentsData && response.studentsData.length > 0) {
+          // Transform the data to match our component's expected format
+          const formattedStudents = response.studentsData.map(student => ({
+            id: student.id,
+            name: student.fullname || 'Unknown',
+            email: student.email || 'No email',
+            grade: student.std || 'N/A',
+            roll_no: student.roll_no || 'N/A',
+            gender: student.gender || 'N/A',
+            attendance: Math.floor(Math.random() * 20) + 80, // Random between 80-100 for demo
+            performance: Math.floor(Math.random() * 30) + 70, // Random between 70-100 for demo
+            lastActive: student.created_at || new Date().toISOString(),
+            stream: student.stream || 'N/A',
+            avatar: student.avatar_url || `https://via.placeholder.com/40?text=${student.fullname?.charAt(0) || ''}`,
+            parents_name: student.parents_name || 'N/A',
+            parents_num: student.parents_num || 'N/A',
+            address: student.address || 'N/A',
+            dob: student.dob || 'N/A',
+            status: student.status
+          }));
+          setStudents(formattedStudents);
         } else {
           // Fallback to mock data if API returns empty
           setStudents([
@@ -408,6 +428,7 @@ const TeacherDashboard = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -420,20 +441,39 @@ const TeacherDashboard = () => {
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900">{student.name || 'Unknown'}</div>
+                                  <div className="text-xs text-gray-500">{student.email || 'No email'}</div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{student.grade || 'N/A'}</div>
+                              <div className="text-xs text-gray-500">Roll: {student.roll_no || 'N/A'}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{student.performance || 'N/A'}%</div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${student.performance || 0}%` }}></div>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{student.attendance || 'N/A'}%</div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${student.attendance || 0}%` }}></div>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-500">{formatDate(student.lastActive)}</div>
+                              <div className="text-xs text-gray-400">{student.stream || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button 
+                                onClick={() => {
+                                  alert(`Student Details:\nName: ${student.name}\nEmail: ${student.email}\nGrade: ${student.grade}\nRoll No: ${student.roll_no}\nGender: ${student.gender}\nStream: ${student.stream}\nPerformance: ${student.performance}%\nAttendance: ${student.attendance}%\nParents: ${student.parents_name}\nContact: ${student.parents_num}\nAddress: ${student.address}\nDOB: ${student.dob}\nStatus: ${student.status || 'Active'}`)
+                                }} 
+                                className="text-primary hover:text-primary-dark px-3 py-1 border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
+                              >
+                                View Details
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -523,8 +563,15 @@ const TeacherDashboard = () => {
                               <div className="text-sm text-gray-500">{formatDate(student.lastActive)}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <button className="text-primary hover:text-primary-dark mr-3">View Details</button>
-                              <button className="text-blue-600 hover:text-blue-900">Message</button>
+                              <button 
+                                onClick={() => {
+                                  alert(`Student Details:\nName: ${student.name}\nEmail: ${student.email}\nGrade: ${student.grade}\nRoll No: ${student.roll_no}\nGender: ${student.gender}\nStream: ${student.stream}\nPerformance: ${student.performance}%\nAttendance: ${student.attendance}%\nParents: ${student.parents_name}\nContact: ${student.parents_num}\nAddress: ${student.address}\nDOB: ${student.dob}\nStatus: ${student.status || 'Active'}`)
+                                }} 
+                                className="text-primary hover:text-primary-dark mr-3 px-3 py-1 border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
+                              >
+                                View Details
+                              </button>
+                              <button className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition-colors">Message</button>
                             </td>
                           </tr>
                         ))}
