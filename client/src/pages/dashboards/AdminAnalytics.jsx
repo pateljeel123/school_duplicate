@@ -272,7 +272,7 @@ const AdminAnalytics = () => {
       .slice(0, 10)
       .map(student => ({
         id: student.id,
-        name: student.name || 'Unknown',
+        name: student.fullname || 'Unknown',
         class: student.std || 'Unknown',
         messages: student.message_count || 0
       }));
@@ -595,9 +595,9 @@ const AdminAnalytics = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                           {teacherData.map((teacher, index) => (
                             <tr key={teacher.id || index}>
-                              <td className="px-6 py-4 whitespace-nowrap">{teacher.name || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.fullname || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{teacher.subject_expertise || 'N/A'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{teacher.qualification || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{teacher.highest_qualification || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{teacher.gender || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{teacher.experience || 'N/A'} years</td>
                               <td className="px-6 py-4 whitespace-nowrap">{teacher.email || 'N/A'}</td>
@@ -761,7 +761,7 @@ const AdminAnalytics = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                           {studentData.map((student, index) => (
                             <tr key={student.id || index}>
-                              <td className="px-6 py-4 whitespace-nowrap">{student.name || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{student.fullname || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">Class {student.std || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{student.gender || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{student.stream || 'General'}</td>

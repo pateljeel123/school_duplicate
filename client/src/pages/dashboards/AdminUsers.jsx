@@ -687,7 +687,7 @@ const AdminUsers = () => {
   const renderUserRow = (user) => {
     const getDepartmentOrClass = () => {
       if (user.role === 'student') {
-        return user.std || 'N/A';
+        return `${user.std}th Standard` || 'N/A';
       } else if (user.role === 'teacher') {
         return user.subject_expertise || user.department || 'N/A';
       } else if (user.role === 'hod') {
