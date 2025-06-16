@@ -22,4 +22,30 @@ router.post('/teacher', chatController.teacherChat);
 router.get('/teacher/history', chatController.getTeacherChatHistory);
 router.delete('/teacher/history', chatController.clearTeacherChatHistory);
 
+// Session management routes
+router.delete('/session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const supabaseModel = require('../Models/supabaseModel');
+    
+    const { error } = await supabaseModel.deleteChatSession(sessionId);
+    
+    if (error) {
+      throw new Error(`Failed to delete chat session: ${error.message}`);
+    }
+    
+    res.json({
+      success: true,
+      message: "Chat session deleted successfully"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete chat session',
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;

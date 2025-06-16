@@ -51,6 +51,12 @@ export const chatService = {
   sendMessage: async (message, image = null) => {
     const formData = new FormData();
     formData.append("message", message);
+    
+    // Add userId from localStorage
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      formData.append("userId", userId);
+    }
 
     if (image) {
       formData.append("image", image);

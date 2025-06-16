@@ -52,6 +52,9 @@ const Login = ({ onLogin }) => {
       if (data && data.user) {
         const userId = data.user.id;
         
+        // Store userId in localStorage
+        localStorage.setItem('userId', userId);
+        
         // Check user role from database tables
         const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
         
@@ -103,6 +106,9 @@ const Login = ({ onLogin }) => {
       
       if (data && data.user) {
         const userId = data.user.id;
+        
+        // Store userId in localStorage
+        localStorage.setItem('userId', userId);
         
         // Check user role from database tables
         const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
