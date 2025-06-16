@@ -405,3 +405,98 @@ exports.getDepartments = async () => {
     return { data: null, error };
   }
 };
+
+// Chat session related functions
+exports.createChatSession = async (userData) => {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([userData])
+      .select();
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+exports.getChatSessions = async (userId) => {
+  try {
+    let query = supabase.from('sessions').select('*');
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+exports.deleteChatSession = async (sessionId) => {
+  try {
+    // First delete all chat messages associated with this session
+    const { error: chatHistoryError } = await supabase
+      .from('chatHistory')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (chatHistoryError) {
+      return { error: chatHistoryError };
+    }
+
+    // Then delete the session itself
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    return { error };
+  } catch (error) {
+    return { error };
+  }
+};
+
+// Chat history related functions
+exports.saveChatMessage = async (messageData) => {
+  try {
+    const { data, error } = await supabase
+      .from('chatHistory')
+      .insert([messageData])
+      .select();
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+exports.getChatHistory = async (sessionId) => {
+  try {
+    const { data, error } = await supabase
+      .from('chatHistory')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+exports.clearChatHistory = async (sessionId) => {
+  try {
+    const { error } = await supabase
+      .from('chatHistory')
+      .delete()
+      .eq('session_id', sessionId);
+
+    return { error };
+  } catch (error) {
+    return { error };
+  }
+};
