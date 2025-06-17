@@ -35,6 +35,7 @@ import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import AuthCallback from './components/auth/AuthCallback'
 
 function App() {
   // Use localStorage to persist authentication state
@@ -292,6 +293,9 @@ function App() {
         } />
         
         {/* Profile page route removed */}
+        
+        {/* Auth Callback Route */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         
         {/* 404 Route */}
         <Route path="*" element={<Navigate to="/not-found" replace />} />

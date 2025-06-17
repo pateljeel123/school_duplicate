@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
 import { signIn, signInWithGoogle, resetPassword, checkUserRole } from '../services/supabaseClient';
 
 const Login = ({ onLogin }) => {
@@ -26,7 +25,6 @@ const Login = ({ onLogin }) => {
     // Basic validation
     if (!email || !password) {
       setError('Please enter both email and password');
-      toast.error('Please enter both email and password');
       return;
     }
     
@@ -40,78 +38,13 @@ const Login = ({ onLogin }) => {
       
       if (signInError) {
         if (signInError.message.includes('Email not confirmed')) {
-          const errorMsg = 'Your email has not been verified yet. Please check your inbox and click the verification link.';
-          setError(errorMsg + ' If you did not receive the email, check your spam folder or try signing up again.');
-          toast.error(errorMsg);
+          setError(
+            'Your email has not been verified yet. Please check your inbox and click the verification link. ' +
+            'If you did not receive the email, check your spam folder or try signing up again.'
+          );
         } else {
           setError('Login failed: ' + signInError.message);
-          toast.error('Login failed: ' + signInError.message);
         }
-        setLoading(false);
-        return;
-      }
-      
-      if (data && data.user) {
-        const userId = data.user.id;
-        
-        // Store userId in localStorage
-        localStorage.setItem('userId', userId);
-        
-        // Check user role from database tables
-        const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
-        
-        // Check if user has multiple roles
-        if (multipleRoles) {
-          const errorMsg = `Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`;
-          setError(errorMsg);
-          toast.error(errorMsg);
-          setLoading(false);
-          return;
-        }
-        
-        // Check if teacher status is pending or rejected
-        if (teacherStatus === 'pending' || teacherStatus === 'rejected') {
-          setError(statusMessage);
-          toast.error(statusMessage);
-          setLoading(false);
-          return;
-        }
-        
-        if (userRole) {
-          // Call the onLogin function passed from App.jsx
-          onLogin(userRole);
-          // Redirect to the appropriate dashboard
-          navigate(`/dashboard/${userRole}`);
-          toast.success(`Welcome back! Logged in successfully as ${userRole}`);
-        } else {
-          // If no role found in any table, show error
-          const errorMsg = 'User role not found. Please contact administrator.';
-          setError(errorMsg);
-          toast.error(errorMsg);
-          setLoading(false);
-        }
-      } else {
-        const errorMsg = 'Login failed: User data not found';
-        setError(errorMsg);
-        toast.error(errorMsg);
-        setLoading(false);
-      }
-    } catch (err) {
-      const errorMsg = 'Login failed: ' + (err.message || 'Please try again');
-      setError(errorMsg);
-      toast.error(errorMsg);
-      setLoading(false);
-    }
-  };
-  
-  // Handle Google Sign-In
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await signInWithGoogle();
-      
-      if (error) {
-        setError('Google sign-in failed: ' + error.message);
         setLoading(false);
         return;
       }
@@ -140,17 +73,47 @@ const Login = ({ onLogin }) => {
         }
         
         if (userRole) {
-          // For existing users with roles, handle login normally
+          // Call the onLogin function passed from App.jsx
           onLogin(userRole);
+          // Redirect to the appropriate dashboard
           navigate(`/dashboard/${userRole}`);
         } else {
-          // If no role found in any table, redirect to profile completion
-          navigate('/profile-completion');
+          // If no role found in any table, show error
+          setError('User role not found. Please contact administrator.');
+          setLoading(false);
         }
       } else {
-        setError('Google sign-in failed: User data not found');
+        setError('Login failed: User data not found');
         setLoading(false);
       }
+    } catch (err) {
+      setError('Login failed: ' + (err.message || 'Please try again'));
+      setLoading(false);
+    }
+  };
+  
+  // Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Call the signInWithGoogle function which initiates the OAuth flow
+      // This will redirect the user to Google's login page
+      const { error } = await signInWithGoogle();
+      
+      // If there's an error initiating the OAuth flow, display it
+      if (error) {
+        setError('Google sign-in failed: ' + error.message);
+        setLoading(false);
+        return;
+      }
+      
+      // If successful, the page will be redirected to Google's login
+      // The actual authentication handling will happen in the callback
+      
+      // Keep loading state true as we're about to redirect
+      // No need to set loading to false as we're leaving this page
     } catch (err) {
       setError('Google sign-in failed: ' + (err.message || 'Please try again'));
       setLoading(false);
