@@ -1,53 +1,171 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaUserGraduate, FaStar, FaChalkboardTeacher, FaBook, FaGraduationCap, FaArrowRight } from 'react-icons/fa';
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  
+  // State for text animation
+  const [teacherTextIndex, setTeacherTextIndex] = useState(0);
+  const [studentTextIndex, setStudentTextIndex] = useState(0);
+  
+  const teacherTexts = [
+    "Plans lessons in seconds",
+    "Tells stories like a TED speaker",
+    "Uses real-time examples & facts",
+    "Generates quizzes instantly",
+    "Adapts to every class level"
+  ];
+  
+  const studentTexts = [
+    "Solves doubts instantly",
+    "Learns at their own pace",
+    "Gets smarter with every click",
+    "Prepares better for every exam",
+    "Never misses a concept"
+  ];
+  
+  // Text animation effect
+  useEffect(() => {
+    const teacherInterval = setInterval(() => {
+      setTeacherTextIndex((prevIndex) => (prevIndex + 1) % teacherTexts.length);
+    }, 3000);
+    
+    const studentInterval = setInterval(() => {
+      setStudentTextIndex((prevIndex) => (prevIndex + 1) % studentTexts.length);
+    }, 3000);
+    
+    return () => {
+      clearInterval(teacherInterval);
+      clearInterval(studentInterval);
+    };
+  }, []);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden pt-16 bg-gradient-to-br from-primary to-rich-blue">
+    <section className="relative min-h-screen w-full overflow-hidden pt-16 bg-gradient-to-br from-primary via-primary/90 to-rich-blue">
+      {/* Animated background elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-grid-pattern"></div>
       </div>
       
-      <div className="container mx-auto h-full flex flex-col md:flex-row items-center justify-center px-6 md:px-10 lg:px-16">
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-white/30"
+            initial={{ 
+              x: Math.random() * 100 + '%', 
+              y: Math.random() * 100 + '%',
+              opacity: Math.random() * 0.5 + 0.3
+            }}
+            animate={{ 
+              y: [null, Math.random() * 20 - 10 + '%'],
+              opacity: [null, Math.random() * 0.3 + 0.1]
+            }}
+            transition={{ 
+              duration: Math.random() * 10 + 10, 
+              repeat: Infinity, 
+              repeatType: 'reverse',
+              ease: 'easeInOut'
+            }}
+            style={{ width: Math.random() * 6 + 2 + 'px', height: Math.random() * 6 + 2 + 'px' }}
+          />
+        ))}
+      </div>
+      
+      <div className="container mx-auto h-full flex flex-col md:flex-row items-center justify-center px-6 md:px-10 lg:px-16 py-12 md:py-20">
         {/* Left content */}
-        <div className="w-full md:w-1/2 text-left z-10 mb-10 md:mb-0">
+        <div className="w-full md:w-1/2 text-center md:text-left z-10 mb-10 md:mb-0">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="p-1 inline-block rounded-lg bg-gradient-to-r from-bright-green to-accent mb-4"
+          >
+            <div className="bg-primary/80 rounded-md px-4 py-1">
+              <p className="text-white/90 text-sm font-medium">Next-Gen Education Platform</p>
+            </div>
+          </motion.div>
+          
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight font-display mb-4"
+            className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-display mb-4"
           >
-            Education for the <span className="text-bright-green">Digital Age</span>
+            AI powered <span className="bg-clip-text text-transparent bg-gradient-to-r from-bright-green to-accent">learning management system</span>
           </motion.h1>
           
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-xl text-white/90 font-body mb-8 max-w-lg"
+            className="text-lg text-white/90 font-body mb-6"
           >
-            A minimalist approach to learning that focuses on what matters most - your growth and development in a connected world.
+            Turn Every Teacher Into a Genius. Every Student Into a Topper.
           </motion.p>
+          
+          <div className="mb-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-1/2">
+                <h3 className="text-white text-base font-medium mb-2 flex items-center">
+                  <FaChalkboardTeacher className="text-bright-green mr-2" /> For Teachers:
+                </h3>
+                <div className="h-12 flex items-center bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 px-4 overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={teacherTextIndex}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="text-white/90 text-sm font-medium"
+                    >
+                      {teacherTexts[teacherTextIndex]}
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
+              </div>
+              
+              <div className="w-1/2">
+                <h3 className="text-white text-base font-medium mb-2 flex items-center">
+                  <FaUserGraduate className="text-accent mr-2" /> For Students:
+                </h3>
+                <div className="h-12 flex items-center bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 px-4 overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={studentTextIndex}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="text-white/90 text-sm font-medium"
+                    >
+                      {studentTexts[studentTextIndex]}
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex flex-wrap gap-4"
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="flex flex-wrap gap-4 justify-center md:justify-start"
           >
             <button 
-              className="bg-bright-green text-white py-3 px-8 rounded-md hover:bg-bright-green/90 transition-all duration-300 flex items-center justify-center font-medium"
+              className="bg-gradient-to-r from-bright-green to-bright-green/80 text-white py-3 px-8 rounded-md hover:shadow-lg hover:shadow-bright-green/20 transition-all duration-300 flex items-center justify-center font-medium group"
               onClick={() => navigate('/courses')}
             >
-              Explore Courses <FaArrowRight className="ml-2" />
+              Explore Courses <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
             
             <button 
-              className="bg-transparent border-2 border-white text-white py-3 px-8 rounded-md hover:bg-white/10 transition-all duration-300 font-medium"
+              className="bg-white/10 backdrop-blur-sm border border-white/20 text-white py-3 px-8 rounded-md hover:bg-white/15 transition-all duration-300 font-medium"
               onClick={() => navigate('/about')}
             >
               Learn More
@@ -63,38 +181,54 @@ const HeroSection = () => {
           className="w-full md:w-1/2 flex justify-center items-center z-10"
         >
           <div className="relative w-full max-w-md">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-bright-green to-accent rounded-lg blur opacity-30"></div>
-            <div className="relative bg-primary/40 backdrop-blur-sm p-6 rounded-lg border border-white/10">
+            <div className="absolute -inset-1 bg-gradient-to-r from-bright-green to-accent rounded-xl blur-lg opacity-30 animate-pulse"></div>
+            <div className="relative bg-primary/40 backdrop-blur-md p-6 rounded-xl border border-white/10 shadow-xl">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
-                  <FaGraduationCap className="text-bright-green text-2xl mr-3" />
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaGraduationCap className="text-white text-xl" />
+                  </div>
                   <div>
                     <h3 className="text-white font-medium">Learn</h3>
                     <p className="text-white/70 text-sm">At your pace</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
-                  <FaBook className="text-accent text-2xl mr-3" />
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-accent to-accent/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaBook className="text-white text-xl" />
+                  </div>
                   <div>
                     <h3 className="text-white font-medium">Study</h3>
                     <p className="text-white/70 text-sm">Smart content</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
-                  <FaChalkboardTeacher className="text-bright-green text-2xl mr-3" />
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaChalkboardTeacher className="text-white text-xl" />
+                  </div>
                   <div>
                     <h3 className="text-white font-medium">Teach</h3>
                     <p className="text-white/70 text-sm">Share knowledge</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
-                  <FaUserGraduate className="text-accent text-2xl mr-3" />
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-accent to-accent/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaUserGraduate className="text-white text-xl" />
+                  </div>
                   <div>
                     <h3 className="text-white font-medium">Grow</h3>
                     <p className="text-white/70 text-sm">Build skills</p>
                   </div>
                 </div>
               </div>
+              
+              <motion.div 
+                className="mt-4 p-3 bg-white/5 border border-white/10 rounded-lg text-center"
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <p className="text-white/80 text-sm">Join <span className="text-bright-green font-medium">10,000+</span> students already learning</p>
+              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -407,7 +541,7 @@ const Home = () => {
                 >
                   Get Started
                 </button>
-                <button className="px-6 py-2 bg-white text-primary border border-primary rounded-md hover:bg-primary/5 transition-colors duration-300 text-sm font-medium">
+                <button className="px-6 py-2 bg-white text-primary border border-primary rounded-md hover:bg-primary/5 transition-colors duration-300 font-medium">
                   Learn More
                 </button>
               </div>
