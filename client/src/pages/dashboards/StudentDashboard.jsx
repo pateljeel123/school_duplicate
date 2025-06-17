@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { chatService, userService } from '../../services/api';
 import AIAssistant from './AIAssistant';
+import { toast } from 'react-hot-toast';
 
 const StudentDashboard = () => {
   // State for active tab
@@ -212,11 +213,13 @@ const StudentDashboard = () => {
         };
         setMessages(prevMessages => [...prevMessages, aiResponse]);
         setIsTyping(false);
-      }, 1000);
+      }, 1500);
+      
+      toast.success('Message sent successfully');
     } catch (err) {
       console.error('Error sending message:', err);
-      // Handle error (could show a notification to the user)
       setIsTyping(false);
+      toast.error('Failed to send message. Please try again.');
     }
   };
   
@@ -274,7 +277,7 @@ const StudentDashboard = () => {
             <div className="max-w-7xl mx-auto flex overflow-x-auto">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
+                className={`px-4 sm:px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview' 
                   ? 'text-primary border-b-2 border-primary' 
                   : 'text-gray-500 hover:text-primary'}`}
               >
@@ -282,7 +285,7 @@ const StudentDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('analytics')}
-                className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
+                className={`px-4 sm:px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'analytics' 
                   ? 'text-primary border-b-2 border-primary' 
                   : 'text-gray-500 hover:text-primary'}`}
               >
@@ -290,7 +293,7 @@ const StudentDashboard = () => {
               </button>
               <button
                 onClick={() => setActiveTab('messages')}
-                className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'messages' 
+                className={`px-4 sm:px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'messages' 
                   ? 'text-primary border-b-2 border-primary' 
                   : 'text-gray-500 hover:text-primary'}`}
               >
@@ -300,7 +303,7 @@ const StudentDashboard = () => {
           </div>
           
           {/* Main content */}
-          <div className="flex-grow p-4 overflow-auto">
+          <div className="flex-grow p-2 sm:p-4 overflow-auto">
             <div className="max-w-7xl mx-auto">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
@@ -350,7 +353,7 @@ const StudentDashboard = () => {
                           <h3 className="text-lg font-semibold text-gray-700">Subject Performance</h3>
                         </div>
                         <div className="p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                             {studentData.subjects && studentData.subjects.map((subject, index) => (
                               <div key={index} className="bg-gray-50 rounded-lg p-4">
                                 <div className="flex justify-between items-center mb-2">
@@ -376,9 +379,9 @@ const StudentDashboard = () => {
                         <div className="p-6 border-b">
                           <h3 className="text-lg font-semibold text-gray-700">Recent Assignments</h3>
                         </div>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto max-w-full">
                           {studentData.recentAssignments && studentData.recentAssignments.length > 0 ? (
-                            <table className="min-w-full divide-y divide-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200 table-auto">
                               <thead className="bg-gray-50">
                                 <tr>
                                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>

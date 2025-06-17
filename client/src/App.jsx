@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster, toast } from 'react-hot-toast'
 
 // Pages
 import Home from './pages/Home'
@@ -56,16 +57,38 @@ function App() {
   const handleLogin = (role) => {
     setIsAuthenticated(true)
     setUserRole(role)
+    toast.success(`Successfully logged in as ${role}!`)
   }
 
   // Logout function
   const handleLogout = () => {
     setIsAuthenticated(false)
     setUserRole(null)
+    toast.success('Successfully logged out!')
   }
 
   return (
     <Router>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+          success: {
+            style: {
+              background: '#22c55e',
+            },
+          },
+          error: {
+            style: {
+              background: '#ef4444',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Public Routes with Navbar and Footer */}
         <Route path="/" element={
@@ -267,6 +290,8 @@ function App() {
             </DashboardLayout>
           </ProtectedRoute>
         } />
+        
+        {/* Profile page route removed */}
         
         {/* 404 Route */}
         <Route path="*" element={<Navigate to="/not-found" replace />} />

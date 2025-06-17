@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const AIAssistant = () => {
   // State for messages
@@ -133,6 +134,8 @@ const AIAssistant = () => {
         // Also refresh chat sessions for existing conversations to update timestamps
         fetchChatSessions();
       }
+      
+      toast.success('Message sent successfully');
     } catch (error) {
       console.error('Error getting AI response:', error);
       
@@ -145,6 +148,7 @@ const AIAssistant = () => {
       };
       
       setMessages(prevMessages => [...prevMessages, errorMessage]);
+      toast.error('Failed to get AI response. Please try again later.');
     } finally {
       setIsTyping(false);
     }

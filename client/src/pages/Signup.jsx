@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { signUp, insertUserData, verifySecurityPin, checkEmailExists } from '../services/supabaseClient';
 
 const Signup = () => {
@@ -24,6 +25,7 @@ const Signup = () => {
   // Student specific fields
   const [rollNo, setRollNo] = useState('');
   const [std, setStd] = useState('');
+  const [stream, setStream] = useState(''); // Add stream state
   const [dob, setDob] = useState('');
   const [parentsName, setParentsName] = useState('');
   const [parentsNum, setParentsNum] = useState('');
@@ -100,12 +102,14 @@ const Signup = () => {
     // Basic validation
     if (!fullname || !email || !password || !confirmPassword || !phonenumber || !gender) {
       setError('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       setLoading(false);
       return;
     }
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      toast.error('Passwords do not match');
       setLoading(false);
       return;
     }
@@ -114,24 +118,28 @@ const Signup = () => {
     if (selectedRole === 'student') {
       if (!rollNo || !std || !dob || !parentsName || !parentsNum || !address) {
         setError('Please fill in all required student fields');
+        toast.error('Please fill in all required student fields');
         setLoading(false);
         return;
       }
     } else if (selectedRole === 'teacher') {
       if (!subjectExpertise || !experience || !highestQualification || !teachingLevel) {
         setError('Please fill in all required teacher fields');
+        toast.error('Please fill in all required teacher fields');
         setLoading(false);
         return;
       }
     } else if (selectedRole === 'hod') {
       if (!departmentExpertise || !experience || !highestQualification || !visionDepartment) {
         setError('Please fill in all required HOD fields');
+        toast.error('Please fill in all required HOD fields');
         setLoading(false);
         return;
       }
     } else if (selectedRole === 'admin') {
       if (!adminAccessLevel) {
         setError('Please fill in all required admin fields');
+        toast.error('Please fill in all required admin fields');
         setLoading(false);
         return;
       }
@@ -145,7 +153,9 @@ const Signup = () => {
       const { exists, role } = await checkEmailExists(email);
       
       if (exists) {
-        setError(`Your email is already registered with the ${role} role. You can only sign up with one email in one role.`);
+        const errorMsg = `Your email is already registered with the ${role} role. You can only sign up with one email in one role.`;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
@@ -154,7 +164,9 @@ const Signup = () => {
       const { data: authData, error: authError } = await signUp(email, password);
       
       if (authError) {
-        setError('Registration failed: ' + authError.message);
+        const errorMsg = 'Registration failed: ' + authError.message;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
@@ -177,6 +189,7 @@ const Signup = () => {
           ...userData,
           roll_no: rollNo,
           std,
+          stream: stream, // Add stream to userData
           dob,
           parents_name: parentsName,
           parents_num: parentsNum,
@@ -227,16 +240,19 @@ const Signup = () => {
         console.error('Insert error details:', insertError);
         // Fix the error message to properly display the error details
         // The current implementation shows an empty object when insertError.message is undefined
-        setError('Error saving profile data: ' + (insertError.message || JSON.stringify(insertError.details || insertError)));
+        const errorMsg = 'Error saving profile data: ' + (insertError.message || JSON.stringify(insertError.details || insertError));
+        setError(errorMsg);
+        toast.error(errorMsg);
         return;
       }
       
       // Show success message
-      setSuccess(
-        selectedRole === 'teacher'
-          ? 'Registration successful! Your account is pending approval from HOD.'
-          : 'Registration successful! Please check your email to verify your account.'
-      );
+      const successMsg = selectedRole === 'teacher'
+        ? 'Registration successful! Your account is pending approval from HOD.'
+        : 'Registration successful! Please check your email to verify your account.';
+      
+      setSuccess(successMsg);
+      toast.success(successMsg);
       
       // Redirect to login page after a delay
       setTimeout(() => {
@@ -244,7 +260,9 @@ const Signup = () => {
       }, 3000);
       
     } catch (err) {
-      setError('Registration failed: ' + (err.message || 'Please try again.'));
+      const errorMsg = 'Registration failed: ' + (err.message || 'Please try again.');
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
   
@@ -450,7 +468,7 @@ const Signup = () => {
                   Roll Number *
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="rollNumber"
                   value={rollNo}
                   onChange={(e) => setRollNo(e.target.value)}
@@ -464,16 +482,51 @@ const Signup = () => {
                 <label htmlFor="std" className="block text-gray-700 font-medium mb-2">
                   Standard/Grade *
                 </label>
-                <input
-                  type="text"
+                <select
                   id="std"
                   value={std}
-                  onChange={(e) => setStd(e.target.value)}
+                  onChange={(e) => {
+                    setStd(e.target.value);
+                    // Reset stream when grade changes
+                    if (e.target.value !== '11' && e.target.value !== '12') {
+                      setStream('');
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm"
-                  placeholder="Enter standard/grade"
                   required
-                />
+                >
+                  <option value="">Select Standard/Grade</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                </select>
               </div>
+              
+              {/* Show stream selection only for 11th and 12th grade */}
+              {(std === '11' || std === '12') && (
+                <div>
+                  <label htmlFor="stream" className="block text-gray-700 font-medium mb-2">
+                    Stream *
+                  </label>
+                  <select
+                    id="stream"
+                    value={stream}
+                    onChange={(e) => setStream(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm"
+                    required
+                  >
+                    <option value="">Select Stream</option>
+                    <option value="Science">Science</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Arts">Arts</option>
+                  </select>
+                </div>
+              )}
               
               <div>
                 <label htmlFor="dob" className="block text-gray-700 font-medium mb-2">

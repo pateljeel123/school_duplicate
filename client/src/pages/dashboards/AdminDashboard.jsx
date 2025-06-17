@@ -269,7 +269,7 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview'
+            className={`px-4 sm:px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'overview'
               ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
@@ -278,7 +278,7 @@ const AdminDashboard = () => {
 
           <button
             onClick={() => setActiveTab('logs')}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs'
+            className={`px-4 sm:px-6 py-3 font-medium whitespace-nowrap ${activeTab === 'logs'
               ? 'text-primary border-b-2 border-primary'
               : 'text-gray-500 hover:text-primary'}`}
           >
@@ -288,13 +288,13 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main content */}
-      <div className="flex-grow p-4 overflow-auto">
+      <div className="flex-grow p-2 sm:p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Summary cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-sm font-medium text-gray-500 uppercase">Total Users</h3>
                   <p className="mt-2 text-3xl font-bold text-primary">{userStats.totalUsers}</p>
@@ -329,7 +329,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 {/* User Role Distribution */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">User Role Distribution</h3>

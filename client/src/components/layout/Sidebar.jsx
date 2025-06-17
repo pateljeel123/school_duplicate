@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
@@ -7,22 +7,49 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
   ArrowLeftOnRectangleIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 const Sidebar = ({ userRole, onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
+  
+  // Check if screen is mobile size
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
 
   // Define navigation items based on user role
   const getNavItems = () => {
+    // Common items for all roles
+    const commonItems = [
+      {
+        name: 'Dashboard',
+        icon: <HomeIcon className="w-6 h-6" />,
+        path: `/dashboard/${userRole}`,
+      },
+      // Profile page removed as requested
+    ];
     // For teacher role, show Lesson Planning and Student Analytics points
     if (userRole === 'teacher') {
       return [
-        {
-          name: 'Dashboard',
-          icon: <HomeIcon className="w-6 h-6" />,
-          path: `/dashboard/${userRole}`,
-        },
+        ...commonItems,
         {
           name: 'Lesson Planning',
           icon: <AcademicCapIcon className="w-6 h-6" />,
@@ -33,20 +60,10 @@ const Sidebar = ({ userRole, onLogout }) => {
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/student-analytics`,
         },
-
       ];
     }
 
-    // For other roles, show all items as before
-    const commonItems = [
-      {
-        name: 'Dashboard',
-        icon: <HomeIcon className="w-6 h-6" />,
-        path: `/dashboard/${userRole}`,
-      },
-
-    ];
-
+    // For other roles, show role-specific items
     const roleSpecificItems = {
       student: [
         {
@@ -97,9 +114,27 @@ const Sidebar = ({ userRole, onLogout }) => {
   const navItems = getNavItems();
 
   return (
-    <div
-      className={`bg-white shadow-md h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}
-    >
+    <>
+      {/* Mobile Menu Button - Only visible on mobile */}
+      <div className="md:hidden fixed top-4 left-4 z-20">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-md bg-primary text-white shadow-md"
+        >
+          {isMobileMenuOpen ? (
+            <XMarkIcon className="w-6 h-6" />
+          ) : (
+            <Bars3Icon className="w-6 h-6" />
+          )}
+        </button>
+      </div>
+      
+      {/* Sidebar - Hidden on mobile unless menu is open */}
+      <div
+        className={`bg-white shadow-md h-screen flex flex-col transition-all duration-300 fixed md:relative z-10
+          ${isCollapsed && !isMobile ? 'w-20' : 'w-64'} 
+          ${isMobile ? (isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}`}
+      >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4 border-b">
         {!isCollapsed && (
@@ -167,6 +202,15 @@ const Sidebar = ({ userRole, onLogout }) => {
         </button>
       </div>
     </div>
+      
+      {/* Overlay when mobile menu is open */}
+      {isMobile && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-0"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

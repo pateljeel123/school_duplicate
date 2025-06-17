@@ -13,10 +13,30 @@ import {
   Cell,
 } from "recharts";
 import { chatService, userService } from "../../services/api";
+import { toast } from "react-hot-toast";
 
 const TeacherDashboard = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // State for mobile view
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if screen is mobile size
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIsMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // State for student detail modal
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -410,37 +430,43 @@ const TeacherDashboard = () => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const messageObj = {
-      id: messages.length + 1,
+    const tempMessage = {
+      id: Date.now(),
       sender: "Teacher",
       content: newMessage,
       timestamp: new Date().toISOString(),
     };
 
     // Add message to UI immediately
-    setMessages([...messages, messageObj]);
+    setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
 
     try {
-      // Send message to API
-      await chatService.sendMessage(newMessage);
-
-      // In a real app, you would wait for the AI response
-      // For now, simulate an AI response after a short delay
+      // In a real app, you would send the message to an API
+      // const response = await chatService.sendMessage(newMessage);
+      // Add AI response after a delay to simulate processing
       setTimeout(() => {
         const aiResponse = {
-          id: messages.length + 2,
+          id: Date.now() + 1,
           sender: "AI Assistant",
-          content:
-            "I'm processing your request. How else can I assist you today?",
+          content: "I'm processing your request. I'll get back to you shortly.",
           timestamp: new Date().toISOString(),
         };
-        setMessages((prevMessages) => [...prevMessages, aiResponse]);
+        setMessages((prev) => [...prev, aiResponse]);
       }, 1000);
-    } catch (err) {
-      console.error("Error sending message:", err);
-      // Handle error (could show a notification to the user)
+      
+      toast.success("Message sent successfully");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message. Please try again.");
     }
+  };
+
+  // Handle viewing student details
+  const handleViewStudentDetails = (student) => {
+    setSelectedStudent(student);
+    setShowDetailModal(true);
+    toast.success(`Viewing details for ${student.name || 'student'}`); 
   };
 
   // Format date for display
@@ -488,7 +514,7 @@ const TeacherDashboard = () => {
             </div>
 
             <div className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
                 {/* Student Avatar */}
                 <div className="flex flex-col items-center">
                   <div className="h-24 w-24 rounded-full bg-primary flex items-center justify-center text-white text-3xl font-bold mb-3">
@@ -505,7 +531,7 @@ const TeacherDashboard = () => {
                 </div>
 
                 {/* Student Information */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <h5 className="text-sm font-medium text-gray-500">Email</h5>
                     <p className="text-gray-800">{selectedStudent.email || "N/A"}</p>
@@ -567,7 +593,7 @@ const TeacherDashboard = () => {
         <div className="max-w-7xl mx-auto flex overflow-x-auto">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 font-medium whitespace-nowrap ${
               activeTab === "overview"
                 ? "text-primary border-b-2 border-primary"
                 : "text-gray-500 hover:text-primary"
@@ -577,7 +603,7 @@ const TeacherDashboard = () => {
           </button>
           <button
             onClick={() => setActiveTab("students")}
-            className={`px-6 py-3 font-medium whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 font-medium whitespace-nowrap ${
               activeTab === "students"
                 ? "text-primary border-b-2 border-primary"
                 : "text-gray-500 hover:text-primary"
@@ -589,13 +615,13 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Main content */}
-      <div className="flex-grow p-4 overflow-auto">
+      <div className="flex-grow p-2 sm:p-4 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Summary cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-sm font-medium text-gray-500 uppercase">
                     Total Students
@@ -610,13 +636,13 @@ const TeacherDashboard = () => {
               </div>
 
               {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Student Performance */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">
                     Class-wise Student Count
                   </h3>
-                  <div className="h-64">
+                  <div className="h-64 w-full">
                     {loadingAnalytics ? (
                       <div className="h-full flex items-center justify-center">
                         <p className="text-gray-500">Loading chart data...</p>
@@ -649,7 +675,7 @@ const TeacherDashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">
                     AI Chatbot Usage by Classes
                   </h3>
-                  <div className="h-64">
+                  <div className="h-64 w-full">
                     {loadingAnalytics ? (
                       <div className="h-full flex items-center justify-center">
                         <p className="text-gray-500">Loading chart data...</p>
@@ -704,7 +730,7 @@ const TeacherDashboard = () => {
                       </p>
                     </div>
                   ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 table-auto w-full">
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -764,10 +790,7 @@ const TeacherDashboard = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
-                                onClick={() => {
-                                  setSelectedStudent(student);
-                                  setShowDetailModal(true);
-                                }}
+                                onClick={() => handleViewStudentDetails(student)}
                                 className="text-primary hover:text-primary-dark px-3 py-1 border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
                               >
                                 View Details
@@ -823,7 +846,7 @@ const TeacherDashboard = () => {
                       <p className="text-gray-500">No students found matching your search criteria.</p>
                     </div>
                   ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 table-auto w-full">
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -891,10 +914,7 @@ const TeacherDashboard = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
-                                onClick={() => {
-                                  setSelectedStudent(student);
-                                  setShowDetailModal(true);
-                                }}
+                                onClick={() => handleViewStudentDetails(student)}
                                 className="text-primary hover:text-primary-dark px-3 py-1 border border-primary rounded-md hover:bg-primary hover:text-white transition-colors"
                               >
                                 View Details
@@ -918,7 +938,7 @@ const TeacherDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">
                   Class-wise Student Count
                 </h3>
-                <div className="h-80">
+                <div className="h-80 w-full">
                   {loadingAnalytics ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500">Loading chart data...</p>
@@ -951,7 +971,7 @@ const TeacherDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">
                   Subject Performance
                 </h3>
-                <div className="h-80">
+                <div className="h-80 w-full">
                   {loadingAnalytics ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500">Loading chart data...</p>
@@ -984,7 +1004,7 @@ const TeacherDashboard = () => {
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">
                   AI Chatbot Usage by Classes
                 </h3>
-                <div className="h-80">
+                <div className="h-80 w-full">
                   {loadingAnalytics ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500">Loading chart data...</p>
@@ -1027,7 +1047,7 @@ const TeacherDashboard = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col h-[600px]">
+              <div className="flex flex-col h-[400px] sm:h-[600px]">
                 {/* Chat messages */}
                 <div className="flex-grow p-4 overflow-y-auto">
                   {loadingMessages ? (

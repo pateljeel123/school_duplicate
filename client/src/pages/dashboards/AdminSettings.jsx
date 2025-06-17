@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { FaSave, FaUndo, FaInfoCircle } from 'react-icons/fa';
 
 const AdminSettings = () => {
@@ -92,14 +93,14 @@ const AdminSettings = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // In a real application, this would save the settings to a backend
-    alert('Settings saved successfully!');
+    toast.success('Settings saved successfully!');
   };
   
   // Reset settings to default
   const handleReset = () => {
     if (window.confirm('Are you sure you want to reset all settings to default?')) {
       // In a real application, this would reset to default values from the backend
-      alert('Settings reset to default values.');
+      toast.success('Settings reset to default values.');
     }
   };
   

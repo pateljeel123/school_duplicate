@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 
 const Messages = () => {
   // State for messages
@@ -117,6 +118,8 @@ const Messages = () => {
           : conv
       )
     );
+    
+    toast.success('Message sent successfully');
   };
 
   return (
