@@ -22,7 +22,6 @@ const ProfileCompletion = () => {
   // Student specific fields
   const [rollNo, setRollNo] = useState('');
   const [std, setStd] = useState('');
-  const [stream, setStream] = useState(''); // Add stream state
   const [dob, setDob] = useState('');
   const [parentsName, setParentsName] = useState('');
   const [parentsNum, setParentsNum] = useState('');
