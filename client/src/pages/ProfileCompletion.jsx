@@ -26,6 +26,8 @@ const ProfileCompletion = () => {
   const [parentsNum, setParentsNum] = useState('');
   const [address, setAddress] = useState('');
   const [previousSchool, setPreviousSchool] = useState('');
+  const [stream, setStream] = useState('');
+  const [studentStatus, setStudentStatus] = useState('active'); // Default status for students
   
   // Teacher specific fields
   const [subjectExpertise, setSubjectExpertise] = useState('');
@@ -33,13 +35,18 @@ const ProfileCompletion = () => {
   const [highestQualification, setHighestQualification] = useState('');
   const [teachingLevel, setTeachingLevel] = useState('');
   const [bio, setBio] = useState('');
+  const [teacherStatus, setTeacherStatus] = useState('pending'); // Default status for teachers
+  const [securityQuestions, setSecurityQuestions] = useState(null); // For security questions
   
   // HOD specific fields
   const [departmentExpertise, setDepartmentExpertise] = useState('');
   const [visionDepartment, setVisionDepartment] = useState('');
+  const [hodStatus, setHodStatus] = useState('active'); // Default status for HOD
   
   // Admin specific fields
   const [adminAccessLevel, setAdminAccessLevel] = useState('');
+  const [adminStatus, setAdminStatus] = useState('active'); // Default status for Admin
+  const [adminSecurityQuestions, setAdminSecurityQuestions] = useState(null); // For security questions
   
   // Error and success messages
   const [error, setError] = useState('');
@@ -86,12 +93,13 @@ const ProfileCompletion = () => {
     setLoading(true);
     
     try {
-      // In a real app, this would verify the PIN with a backend
-      // For now, we'll just simulate a successful verification
-      // const { data, error } = await verifySecurityPin(selectedRole, securityPin);
+      // Get the correct security PIN from environment variables based on role
+      const correctPin = selectedRole === 'hod' 
+        ? import.meta.env.VITE_HOD_SECURITY_PIN 
+        : import.meta.env.VITE_ADMIN_SECURITY_PIN;
       
-      // Simulate PIN verification
-      const isPinValid = securityPin === '1234'; // Example PIN
+      // Verify PIN
+      const isPinValid = securityPin === correctPin;
       
       if (isPinValid) {
         setPinVerified(true);
@@ -123,6 +131,7 @@ const ProfileCompletion = () => {
         setError('Please fill in all required student fields');
         return;
       }
+      // Stream is optional, so no validation needed
     } else if (selectedRole === 'teacher') {
       if (!subjectExpertise || !experience || !highestQualification || !teachingLevel) {
         setError('Please fill in all required teacher fields');
@@ -174,18 +183,22 @@ const ProfileCompletion = () => {
           parents_num: parentsNum,
           address,
           previous_school: previousSchool,
+          stream,
+          status: studentStatus,
+          role: selectedRole,
         };
       } else if (selectedRole === 'teacher') {
         userData = {
           ...userData,
-          // Store email in a different field for teacher_approvals table
-          user_email: user.email,
+          email: user.email,
           subject_expertise: subjectExpertise,
           experience,
           highest_qualification: highestQualification,
           teaching_level: teachingLevel,
           bio,
-          status: 'pending', // Teachers need HOD approval
+          status: teacherStatus, // Teachers need HOD approval
+          role: selectedRole,
+          security_questions: securityQuestions,
         };
       } else if (selectedRole === 'hod') {
         userData = {
@@ -194,16 +207,26 @@ const ProfileCompletion = () => {
           experience,
           highest_qualification: highestQualification,
           vision_department: visionDepartment,
+          status: hodStatus,
+          role: selectedRole,
         };
       } else if (selectedRole === 'admin') {
         userData = {
           ...userData,
           admin_access_level: adminAccessLevel,
+          access_level: adminAccessLevel, // Set both fields as per schema
+          status: adminStatus,
+          role: selectedRole,
+          security_questions: adminSecurityQuestions,
         };
       }
       
       // Insert user data into the appropriate table
-      const tableName = selectedRole === 'teacher' ? 'teacher_approvals' : selectedRole + 's';
+      // For student, teacher, hod and admin, use the role name directly
+      const tableName = selectedRole === 'student' ? 'student' : 
+                       selectedRole === 'teacher' ? 'teacher' : 
+                       selectedRole === 'hod' ? 'hod' : 
+                       selectedRole === 'admin' ? 'admin' : selectedRole;
       const { error: insertError } = await insertUserData(tableName, userData);
       
       if (insertError) {
@@ -467,6 +490,24 @@ const ProfileCompletion = () => {
                   placeholder="Enter previous school name"
                 />
               </div>
+              
+              <div className="md:col-span-2">
+                <label htmlFor="stream" className="block text-gray-700 font-medium mb-2">
+                  Stream
+                </label>
+                <select
+                  id="stream"
+                  value={stream}
+                  onChange={(e) => setStream(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select Stream (Optional)</option>
+                  <option value="science">Science</option>
+                  <option value="commerce">Commerce</option>
+                  <option value="arts">Arts</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -549,6 +590,20 @@ const ProfileCompletion = () => {
                   onChange={(e) => setBio(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Tell us about yourself"
+                  rows="3"
+                ></textarea>
+              </div>
+              
+              <div className="md:col-span-2">
+                <label htmlFor="securityQuestions" className="block text-gray-700 font-medium mb-2">
+                  Security Questions
+                </label>
+                <textarea
+                  id="securityQuestions"
+                  value={securityQuestions || ''}
+                  onChange={(e) => setSecurityQuestions(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter security questions and answers (optional)"
                   rows="3"
                 ></textarea>
               </div>
@@ -645,6 +700,20 @@ const ProfileCompletion = () => {
                   <option value="level_3">Level 3 (Advanced)</option>
                   <option value="super_admin">Super Admin</option>
                 </select>
+              </div>
+              
+              <div>
+                <label htmlFor="adminSecurityQuestions" className="block text-gray-700 font-medium mb-2">
+                  Security Questions
+                </label>
+                <textarea
+                  id="adminSecurityQuestions"
+                  value={adminSecurityQuestions || ''}
+                  onChange={(e) => setAdminSecurityQuestions(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter security questions and answers (optional)"
+                  rows="3"
+                ></textarea>
               </div>
             </div>
           </div>
