@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { updatePassword, supabase } from '../services/supabaseClient';
 
 const ResetPassword = () => {
@@ -41,16 +42,19 @@ const ResetPassword = () => {
     
     if (!newPassword || !confirmPassword) {
       setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
     
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     
     if (newPassword.length < 6) {
       setError('Password must be at least 6 characters long');
+      toast.error('Password must be at least 6 characters long');
       return;
     }
     
@@ -61,12 +65,16 @@ const ResetPassword = () => {
       const { error: updateError } = await updatePassword(newPassword);
       
       if (updateError) {
-        setError('Failed to update password: ' + updateError.message);
+        const errorMsg = 'Failed to update password: ' + updateError.message;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
       
-      setSuccess('Password updated successfully!');
+      const successMsg = 'Password updated successfully!';
+      setSuccess(successMsg);
+      toast.success(successMsg);
       
       // Redirect to login page after a delay
       setTimeout(() => {
@@ -74,7 +82,9 @@ const ResetPassword = () => {
       }, 3000);
       
     } catch (err) {
-      setError('Failed to update password: ' + (err.message || 'Please try again'));
+      const errorMsg = 'Failed to update password: ' + (err.message || 'Please try again');
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };

@@ -59,7 +59,7 @@ const Courses = () => {
     : coursesData.filter(course => course.category === selectedCategory);
 
   return (
-    <div className="bg-white py-12">
+    <div className="bg-white py-12 pt-24">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center">Our Courses</h1>
         

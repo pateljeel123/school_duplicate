@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { supabase, insertUserData } from '../services/supabaseClient';
 
 const ProfileCompletion = () => {
@@ -21,6 +22,7 @@ const ProfileCompletion = () => {
   // Student specific fields
   const [rollNo, setRollNo] = useState('');
   const [std, setStd] = useState('');
+  const [stream, setStream] = useState(''); // Add stream state
   const [dob, setDob] = useState('');
   const [parentsName, setParentsName] = useState('');
   const [parentsNum, setParentsNum] = useState('');
@@ -122,29 +124,34 @@ const ProfileCompletion = () => {
     // Basic validation
     if (!fullname || !phonenumber || !gender) {
       setError('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     
     // Role-specific validation
     if (selectedRole === 'student') {
-      if (!rollNo || !std || !dob || !parentsName || !parentsNum || !address) {
+      if (!rollNo || !std || !dob || !parentsName || !parentsNum || !address || ((std === '11' || std === '12') && !stream)) {
         setError('Please fill in all required student fields');
+        toast.error('Please fill in all required student fields');
         return;
       }
       // Stream is optional, so no validation needed
     } else if (selectedRole === 'teacher') {
       if (!subjectExpertise || !experience || !highestQualification || !teachingLevel) {
         setError('Please fill in all required teacher fields');
+        toast.error('Please fill in all required teacher fields');
         return;
       }
     } else if (selectedRole === 'hod') {
       if (!departmentExpertise || !experience || !highestQualification || !visionDepartment) {
         setError('Please fill in all required HOD fields');
+        toast.error('Please fill in all required HOD fields');
         return;
       }
     } else if (selectedRole === 'admin') {
       if (!adminAccessLevel) {
         setError('Please fill in all required admin fields');
+        toast.error('Please fill in all required admin fields');
         return;
       }
     }
@@ -155,7 +162,9 @@ const ProfileCompletion = () => {
     
     try {
       if (!user) {
-        setError('User not authenticated');
+        const errorMsg = 'User not authenticated';
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
@@ -178,6 +187,7 @@ const ProfileCompletion = () => {
           ...userData,
           roll_no: rollNo,
           std,
+          stream: stream, // Add stream to userData
           dob,
           parents_name: parentsName,
           parents_num: parentsNum,
@@ -230,7 +240,9 @@ const ProfileCompletion = () => {
       const { error: insertError } = await insertUserData(tableName, userData);
       
       if (insertError) {
-        setError('Error saving profile data: ' + insertError.message);
+        const errorMsg = 'Error saving profile data: ' + insertError.message;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
@@ -241,11 +253,12 @@ const ProfileCompletion = () => {
       });
       
       // Show success message
-      setSuccess(
-        selectedRole === 'teacher'
-          ? 'Profile completed! Your account is pending approval from HOD.'
-          : 'Profile completed! You can now access your dashboard.'
-      );
+      const successMsg = selectedRole === 'teacher'
+        ? 'Profile completed! Your account is pending approval from HOD.'
+        : 'Profile completed! You can now access your dashboard.';
+      
+      setSuccess(successMsg);
+      toast.success(successMsg);
       
       // Redirect to dashboard after a delay
       setTimeout(() => {
@@ -253,7 +266,9 @@ const ProfileCompletion = () => {
       }, 3000);
       
     } catch (err) {
-      setError('Profile completion failed: ' + (err.message || 'Please try again.'));
+      const errorMsg = 'Profile completion failed: ' + (err.message || 'Please try again.');
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
@@ -393,7 +408,7 @@ const ProfileCompletion = () => {
                   Roll Number *
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="rollNo"
                   value={rollNo}
                   onChange={(e) => setRollNo(e.target.value)}
@@ -407,16 +422,50 @@ const ProfileCompletion = () => {
                 <label htmlFor="std" className="block text-gray-700 font-medium mb-2">
                   Standard/Grade *
                 </label>
-                <input
-                  type="text"
+                <select
                   id="std"
                   value={std}
-                  onChange={(e) => setStd(e.target.value)}
+                  onChange={(e) => {
+                    setStd(e.target.value);
+                    // Reset stream when grade changes
+                    if (e.target.value !== '11' && e.target.value !== '12') {
+                      setStream('');
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Enter standard/grade"
                   required
-                />
+                >
+                  <option value="">Select Standard/Grade</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                </select>
               </div>
+              
+              {(std === '11' || std === '12') && (
+                <div>
+                  <label htmlFor="stream" className="block text-gray-700 font-medium mb-2">
+                    Stream *
+                  </label>
+                  <select
+                    id="stream"
+                    value={stream}
+                    onChange={(e) => setStream(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  >
+                    <option value="">Select Stream</option>
+                    <option value="Science">Science</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Arts">Arts</option>
+                  </select>
+                </div>
+              )}
               
               <div>
                 <label htmlFor="dob" className="block text-gray-700 font-medium mb-2">

@@ -88,7 +88,7 @@ const HeroSlider = ({ darkMode }) => {
 
   return (
     <section 
-      className="relative h-screen w-full overflow-hidden"
+      className="relative h-screen w-full overflow-hidden pt-16"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

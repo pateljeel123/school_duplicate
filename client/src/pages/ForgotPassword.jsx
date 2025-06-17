@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { resetPassword } from '../services/supabaseClient';
 
 const ForgotPassword = () => {
@@ -19,6 +20,7 @@ const ForgotPassword = () => {
     
     if (!email) {
       setError('Please enter your email address');
+      toast.error('Please enter your email address');
       return;
     }
     
@@ -29,15 +31,21 @@ const ForgotPassword = () => {
       const { error: resetError } = await resetPassword(email);
       
       if (resetError) {
-        setError('Failed to send reset email: ' + resetError.message);
+        const errorMsg = 'Failed to send reset email: ' + resetError.message;
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
         return;
       }
       
-      setSuccess('Password reset instructions sent to your email!');
+      const successMsg = 'Password reset instructions sent to your email!';
+      setSuccess(successMsg);
+      toast.success(successMsg);
       setLoading(false);
     } catch (err) {
-      setError('Failed to send reset email: ' + (err.message || 'Please try again'));
+      const errorMsg = 'Failed to send reset email: ' + (err.message || 'Please try again');
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };

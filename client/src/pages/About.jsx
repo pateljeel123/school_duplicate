@@ -32,7 +32,7 @@ const About = () => {
   ];
 
   return (
-    <div className="bg-white py-12">
+    <div className="bg-white py-12 pt-24">
       <div className="container mx-auto px-4">
         {/* About Section */}
         <section className="mb-16">

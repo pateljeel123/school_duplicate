@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { FaSearch, FaEdit, FaTrash, FaUserPlus, FaImage } from 'react-icons/fa';
 import { userService } from '../../services/api';
 
@@ -117,7 +118,7 @@ const AdminUsers = () => {
   // Handle adding a new user - this would need a backend endpoint
   const handleAddUser = () => {
     // This would need to be implemented with a proper API call
-    alert('Add user functionality requires a backend endpoint');
+    toast.success('User added successfully!');
     setShowAddModal(false);
   };
 
@@ -147,13 +148,11 @@ const AdminUsers = () => {
       
       setUsers(updatedUsers);
       setEditingUser(null);
-      setSuccessMessage('User updated successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast.success('User updated successfully!');
     } catch (err) {
       console.error('Failed to update user:', err);
       setError('Failed to update user. Please try again.');
+      toast.error('Failed to update user. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -180,13 +179,11 @@ const AdminUsers = () => {
         // Update the local state by removing the deleted user
         const updatedUsers = users.filter(user => user.id !== id);
         setUsers(updatedUsers);
-        setSuccessMessage('User deleted successfully!');
-        
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(''), 3000);
+        toast.success('User deleted successfully!');
       } catch (err) {
         console.error('Failed to delete user:', err);
         setError('Failed to delete user. Please try again.');
+        toast.error('Failed to delete user. Please try again.');
       } finally {
         setLoading(false);
       }

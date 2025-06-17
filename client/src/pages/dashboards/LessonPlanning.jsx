@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { lessonPlanningService } from '../../services/api';
 import './LessonPlanning.css'; // We'll create this CSS file next
+import { toast } from 'react-hot-toast';
 
 const LessonPlanning = () => {
   const [selectedCard, setSelectedCard] = useState(null);
@@ -270,6 +271,9 @@ const LessonPlanning = () => {
     // If AI generation failed, fall back to the local generation
     if (!aiGeneratedPlan) {
       console.log('Falling back to local lesson plan generation');
+      toast.error('AI generation failed. Using local generation instead.');
+    } else {
+      toast.success('Lesson plan generated successfully!');
     }
     
     setShowLessonPlan(true);
@@ -300,6 +304,7 @@ const LessonPlanning = () => {
       setSavedPlans(response.lessonPlans || []);
       
       setSaveSuccess(true);
+      toast.success('Lesson plan saved successfully!');
       
       // Hide success message after 3 seconds
       setTimeout(() => {
@@ -309,6 +314,7 @@ const LessonPlanning = () => {
     } catch (err) {
       console.error('Error saving lesson plan:', err);
       setError('Failed to save lesson plan');
+      toast.error('Failed to save lesson plan');
       
       // Hide error message after 3 seconds
       setTimeout(() => {

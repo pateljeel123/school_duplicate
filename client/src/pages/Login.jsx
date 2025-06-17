@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { signIn, signInWithGoogle, resetPassword, checkUserRole } from '../services/supabaseClient';
 
 const Login = ({ onLogin }) => {
@@ -25,6 +26,7 @@ const Login = ({ onLogin }) => {
     // Basic validation
     if (!email || !password) {
       setError('Please enter both email and password');
+      toast.error('Please enter both email and password');
       return;
     }
     
@@ -38,12 +40,12 @@ const Login = ({ onLogin }) => {
       
       if (signInError) {
         if (signInError.message.includes('Email not confirmed')) {
-          setError(
-            'Your email has not been verified yet. Please check your inbox and click the verification link. ' +
-            'If you did not receive the email, check your spam folder or try signing up again.'
-          );
+          const errorMsg = 'Your email has not been verified yet. Please check your inbox and click the verification link.';
+          setError(errorMsg + ' If you did not receive the email, check your spam folder or try signing up again.');
+          toast.error(errorMsg);
         } else {
           setError('Login failed: ' + signInError.message);
+          toast.error('Login failed: ' + signInError.message);
         }
         setLoading(false);
         return;
@@ -60,7 +62,9 @@ const Login = ({ onLogin }) => {
         
         // Check if user has multiple roles
         if (multipleRoles) {
-          setError(`Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`);
+          const errorMsg = `Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`;
+          setError(errorMsg);
+          toast.error(errorMsg);
           setLoading(false);
           return;
         }
@@ -68,6 +72,7 @@ const Login = ({ onLogin }) => {
         // Check if teacher status is pending or rejected
         if (teacherStatus === 'pending' || teacherStatus === 'rejected') {
           setError(statusMessage);
+          toast.error(statusMessage);
           setLoading(false);
           return;
         }
@@ -77,17 +82,24 @@ const Login = ({ onLogin }) => {
           onLogin(userRole);
           // Redirect to the appropriate dashboard
           navigate(`/dashboard/${userRole}`);
+          toast.success(`Welcome back! Logged in successfully as ${userRole}`);
         } else {
           // If no role found in any table, show error
-          setError('User role not found. Please contact administrator.');
+          const errorMsg = 'User role not found. Please contact administrator.';
+          setError(errorMsg);
+          toast.error(errorMsg);
           setLoading(false);
         }
       } else {
-        setError('Login failed: User data not found');
+        const errorMsg = 'Login failed: User data not found';
+        setError(errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
       }
     } catch (err) {
-      setError('Login failed: ' + (err.message || 'Please try again'));
+      const errorMsg = 'Login failed: ' + (err.message || 'Please try again');
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
