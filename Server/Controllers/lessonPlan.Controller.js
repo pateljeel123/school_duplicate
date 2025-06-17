@@ -1,26 +1,27 @@
 const axios = require('axios');
-
-// In-memory storage for lesson plans
-let lessonPlans = [];
+const supabaseModel = require('../Models/supabaseModel');
 
 /**
  * Create a new lesson plan
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.createLessonPlan = (req, res) => {
+exports.createLessonPlan = async (req, res) => {
   try {
     const newPlan = {
-      id: Date.now().toString(), // Generate a unique ID
       ...req.body,
       createdAt: new Date().toISOString()
     };
     
-    lessonPlans.push(newPlan);
+    const { data, error } = await supabaseModel.saveLessonPlan(newPlan);
+    
+    if (error) {
+      throw new Error(error.message || 'Failed to save lesson plan');
+    }
     
     res.status(201).json({
       success: true,
-      lessonPlan: newPlan,
+      lessonPlan: data.lessonPlan,
       message: "Lesson plan created successfully"
     });
   } catch (error) {
@@ -38,14 +39,18 @@ exports.createLessonPlan = (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.getTeacherLessonPlans = (req, res) => {
+exports.getTeacherLessonPlans = async (req, res) => {
   try {
     const { teacherId } = req.params;
-    const teacherPlans = lessonPlans.filter(plan => plan.teacherId === teacherId);
+    const { data, error } = await supabaseModel.getTeacherLessonPlans(teacherId);
+    
+    if (error) {
+      throw new Error(error.message || 'Failed to fetch lesson plans');
+    }
     
     res.json({
       success: true,
-      lessonPlans: teacherPlans,
+      lessonPlans: data,
       message: "Lesson plans retrieved successfully"
     });
   } catch (error) {
@@ -63,12 +68,16 @@ exports.getTeacherLessonPlans = (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.getLessonPlanById = (req, res) => {
+exports.getLessonPlanById = async (req, res) => {
   try {
     const { planId } = req.params;
-    const plan = lessonPlans.find(p => p.id === planId);
+    const { data, error } = await supabaseModel.getLessonPlanById(planId);
     
-    if (!plan) {
+    if (error) {
+      throw new Error(error.message || 'Failed to fetch lesson plan');
+    }
+    
+    if (!data) {
       return res.status(404).json({
         success: false,
         message: "Lesson plan not found"
@@ -77,7 +86,7 @@ exports.getLessonPlanById = (req, res) => {
     
     res.json({
       success: true,
-      lessonPlan: plan,
+      lessonPlan: data,
       message: "Lesson plan retrieved successfully"
     });
   } catch (error) {
@@ -95,28 +104,30 @@ exports.getLessonPlanById = (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.updateLessonPlan = (req, res) => {
+exports.updateLessonPlan = async (req, res) => {
   try {
     const { planId } = req.params;
-    const planIndex = lessonPlans.findIndex(p => p.id === planId);
+    const updates = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
     
-    if (planIndex === -1) {
+    const { data, error } = await supabaseModel.updateLessonPlan(planId, updates);
+    
+    if (error) {
+      throw new Error(error.message || 'Failed to update lesson plan');
+    }
+    
+    if (!data) {
       return res.status(404).json({
         success: false,
         message: "Lesson plan not found"
       });
     }
     
-    // Update the plan
-    lessonPlans[planIndex] = {
-      ...lessonPlans[planIndex],
-      ...req.body,
-      updatedAt: new Date().toISOString()
-    };
-    
     res.json({
       success: true,
-      lessonPlan: lessonPlans[planIndex],
+      lessonPlan: data,
       message: "Lesson plan updated successfully"
     });
   } catch (error) {
@@ -134,18 +145,20 @@ exports.updateLessonPlan = (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-exports.deleteLessonPlan = (req, res) => {
+exports.deleteLessonPlan = async (req, res) => {
   try {
     const { planId } = req.params;
-    const initialLength = lessonPlans.length;
+    const { error } = await supabaseModel.deleteLessonPlan(planId);
     
-    lessonPlans = lessonPlans.filter(p => p.id !== planId);
-    
-    if (lessonPlans.length === initialLength) {
-      return res.status(404).json({
-        success: false,
-        message: "Lesson plan not found"
-      });
+    if (error) {
+      // Check if the error is because the plan wasn't found
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: "Lesson plan not found"
+        });
+      }
+      throw new Error(error.message || 'Failed to delete lesson plan');
     }
     
     res.json({

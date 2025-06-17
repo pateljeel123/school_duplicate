@@ -14,6 +14,7 @@ const LessonPlanning = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('Lesson plan saved successfully!');
   const [generatedLessonPlan, setGeneratedLessonPlan] = useState(null);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [animateCards, setAnimateCards] = useState(false);
@@ -28,19 +29,31 @@ const LessonPlanning = () => {
   // Get user ID from localStorage (would be set during login)
   const userId = localStorage.getItem('userId') || '1'; // Default to '1' for testing
   
-  // Fetch saved lesson plans on component mount
+  // Fetch saved lesson plans on component mount (from sessions and chatHistory tables)
   useEffect(() => {
     const fetchSavedPlans = async () => {
       try {
         setLoading(true);
-        const response = await lessonPlanningService.getTeacherLessonPlans('1');
+        // Use the actual userId instead of hardcoded '1'
+        const response = await lessonPlanningService.getTeacherLessonPlans(userId);
+        console.log('API Response:', response); // Log the full response
+        console.log('Lesson Plans from API:', response.lessonPlans); // Log the lessonPlans array
+        
+        // Check if we have lesson plans in the response
+        if (response.lessonPlans && response.lessonPlans.length > 0) {
+          console.log('First lesson plan:', response.lessonPlans[0]); // Log the first lesson plan
+        } else {
+          console.log('No lesson plans found in response');
+        }
+        
         setSavedPlans(response.lessonPlans || []);
+        console.log('Saved Plans State after update:', response.lessonPlans || []); // Log what we're setting to state
       } catch (err) {
         console.error('Error fetching saved plans:', err);
         // Initialize with empty array to prevent errors
         setSavedPlans([]);
         // Show a temporary error message
-        setError('Unable to load saved plans. The server might be restarting or the in-memory storage might be empty.');
+        setError('Unable to load saved lesson plans from database. Please try again later.');
         // Clear the error message after 5 seconds
         setTimeout(() => setError(''), 5000);
       } finally {
@@ -48,8 +61,12 @@ const LessonPlanning = () => {
       }
     };
 
-    fetchSavedPlans();
-  }, []);
+    // Only fetch if we have a valid userId
+    if (userId) {
+      console.log('Fetching lesson plans for userId:', userId); // Log the userId
+      fetchSavedPlans();
+    }
+  }, [userId]);
   
   // Mock lesson templates
   const lessonTemplates = [
@@ -279,7 +296,7 @@ const LessonPlanning = () => {
     setShowLessonPlan(true);
   };
   
-  // Save the current lesson plan to the database
+  // Save the current lesson plan to the database (using sessions and chatHistory tables)
   const saveLessonPlan = async () => {
     if (!lessonPlan) return;
     
@@ -287,16 +304,27 @@ const LessonPlanning = () => {
       setLoading(true);
       setSaveSuccess(false);
       
+      // Prepare the complete lesson plan data to save
       const planToSave = {
         teacherId: userId,
         templateId: selectedCard,
         title: lessonPlan.title,
         topicName,
         duration,
-        sections: lessonPlan.sections,
+        language,
         createdAt: new Date().toISOString()
       };
       
+      // If it's an AI generated plan, include all its properties
+      if (generatedLessonPlan) {
+        // Include all properties from the AI generated plan
+        Object.assign(planToSave, generatedLessonPlan);
+      } else {
+        // Include sections from the locally generated plan
+        planToSave.sections = lessonPlan.sections;
+      }
+      
+      // Save the lesson plan (backend will handle storing in sessions and chatHistory)
       await lessonPlanningService.saveLessonPlan(planToSave);
       
       // Refresh the saved plans list
@@ -304,6 +332,7 @@ const LessonPlanning = () => {
       setSavedPlans(response.lessonPlans || []);
       
       setSaveSuccess(true);
+      setSaveSuccessMessage('Lesson plan saved successfully!');
       toast.success('Lesson plan saved successfully!');
       
       // Hide success message after 3 seconds
@@ -331,6 +360,39 @@ const LessonPlanning = () => {
     setTopicName('');
     setDuration('');
   };
+  
+  // Function to delete a lesson plan
+  const deleteLessonPlan = async (planId) => {
+    if (!planId) {
+      setError("Cannot delete lesson plan: Invalid plan ID");
+      return;
+    }
+    
+    if (window.confirm("Are you sure you want to delete this lesson plan? This action cannot be undone.")) {
+      try {
+        setLoading(true);
+        await lessonPlanningService.deleteLessonPlan(planId);
+        
+        // Remove the deleted plan from the savedPlans state
+        setSavedPlans(savedPlans.filter(plan => plan.id !== planId));
+        
+        // Show success message
+        setSaveSuccess(true);
+        setSaveSuccessMessage("लेसन प्लान सफलतापूर्वक हटा दिया गया!");
+        toast.success("लेसन प्लान सफलतापूर्वक हटा दिया गया!");
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } catch (error) {
+        console.error("Error deleting lesson plan:", error);
+        setError("लेसन प्लान हटाने में विफल। कृपया पुनः प्रयास करें।");
+        toast.error("लेसन प्लान हटाने में विफल");
+        setTimeout(() => setError(null), 3000);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const [activeTab, setActiveTab] = useState('templates'); // 'templates' or 'saved'
   
@@ -339,10 +401,14 @@ const LessonPlanning = () => {
 
   // Render lesson plan content based on its format
   const renderLessonPlanContent = () => {
-    // Use the generated lesson plan directly
-    const plan = generatedLessonPlan;
+    console.log('Rendering lesson plan content');
+    
+    // Use the generated lesson plan directly if available, otherwise use the local lesson plan
+    const plan = generatedLessonPlan || lessonPlan;
+    console.log('Plan to render:', plan);
     
     if (!plan) {
+      console.log('No plan available to render');
       return (
         <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
           <p className="text-gray-700">No lesson plan available.</p>
@@ -350,11 +416,13 @@ const LessonPlanning = () => {
       );
     }
 
-    // Check if the plan has the expected structure from the backend
+    // Check if the plan has the expected structure from the backend (AI generated or saved AI plan)
     if (plan.learningObjectives || plan.requiredMaterials || plan.activities || 
         plan.assessmentStrategies || plan.homeworkOrFollowUpActivities || 
         plan.factsAndFigures || plan.story || plan.realWorldExamples || 
         plan.practiceExercises || plan.lessonTitle) {
+      
+      console.log('Rendering AI-structured plan');
       
       return (
         <div className="space-y-6">
@@ -796,7 +864,7 @@ const LessonPlanning = () => {
           </div>
           <div>
             <h4 className="font-semibold mb-1">Success</h4>
-            <p>Lesson plan saved successfully!</p>
+            <p>{saveSuccessMessage}</p>
           </div>
         </div>
       )}
@@ -883,39 +951,90 @@ const LessonPlanning = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedPlans.map((plan, index) => (
-                    <div 
-                      key={plan.id}
-                      className={`p-6 rounded-xl shadow-lg border-l-4 border-primary bg-white cursor-pointer transform transition-all duration-500 hover:shadow-2xl hover:scale-105 ${animateCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                      style={{ transitionDelay: `${index * 100}ms` }}
-                      onClick={() => {
-                        // Load saved plan
-                        setSelectedCard(plan.templateId);
-                        setTopicName(plan.topicName);
-                        setDuration(plan.duration);
-                        setShowLessonPlan(true);
-                      }}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary bg-opacity-10 text-3xl shadow-inner">
-                          {lessonTemplates.find(t => t.id === plan.templateId)?.icon || '📄'}
+                  {console.log('Rendering savedPlans:', savedPlans)}
+                  {savedPlans.map((plan, index) => {
+                    console.log(`Rendering plan ${index}:`, plan);
+                    // Check if plan has required properties
+                    const hasRequiredProps = plan && plan.topicName && plan.templateId;
+                    console.log(`Plan ${index} has required props:`, hasRequiredProps);
+                    
+                    // If plan doesn't have required properties, render a debug card
+                    if (!hasRequiredProps) {
+                      return (
+                        <div key={index} className="p-6 rounded-xl shadow-lg border-l-4 border-red-500 bg-white">
+                          <h3 className="text-lg font-bold mb-3 text-red-800">Invalid Plan Data</h3>
+                          <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-40">
+                            {JSON.stringify(plan, null, 2)}
+                          </pre>
                         </div>
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {new Date(plan.createdAt).toLocaleDateString()}
-                        </span>
+                      );
+                    }
+                    
+                    return (
+                      <div 
+                        key={plan.id || index}
+                        className={`p-6 rounded-xl shadow-lg border-l-4 border-primary bg-white cursor-pointer transform transition-all duration-500 hover:shadow-2xl hover:scale-105 ${animateCards ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                        style={{ transitionDelay: `${index * 100}ms` }}
+                        onClick={() => {
+                          console.log('Clicked on plan:', plan);
+                          // Load saved plan
+                          setSelectedCard(plan.templateId);
+                          setTopicName(plan.topicName);
+                          setDuration(plan.duration);
+                          setLanguage(plan.language || 'english');
+                          
+                          // For all saved plans, set them as generatedLessonPlan to ensure proper rendering
+                          console.log('Setting generatedLessonPlan:', plan);
+                          setGeneratedLessonPlan(plan);
+                          
+                          // Also update the lessonPlan state as a fallback
+                          if (plan.sections) {
+                            // If it has sections (locally generated plan structure)
+                            const localPlan = {
+                              title: plan.title || plan.lessonTitle || `${plan.topicName} Lesson Plan`,
+                              sections: plan.sections
+                            };
+                            console.log('Setting local lessonPlan:', localPlan);
+                          }
+                          
+                          setShowLessonPlan(true);
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary bg-opacity-10 text-3xl shadow-inner">
+                            {lessonTemplates.find(t => t.id === plan.templateId)?.icon || '📄'}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click
+                                deleteLessonPlan(plan.id);
+                              }}
+                              className="text-red-500 hover:text-red-700 transition-colors p-1 rounded-full hover:bg-red-50"
+                              title="Delete lesson plan"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                              {plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : 'No date'}
+                            </span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-bold mb-3 text-gray-800">{plan.title || plan.lessonTitle || 'Untitled Plan'}</h3>
+                        <div className="flex justify-between items-center mt-4">
+                          <span className="text-sm text-gray-600">{plan.topicName}</span>
+                          <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium rounded-full bg-primary bg-opacity-10 text-primary hover:bg-opacity-20 transition-colors">
+                            Open
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </span>
+                        </div>
                       </div>
-                      <h3 className="text-lg font-bold mb-3 text-gray-800">{plan.title}</h3>
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="text-sm text-gray-600">{plan.topicName}</span>
-                        <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium rounded-full bg-primary bg-opacity-10 text-primary hover:bg-opacity-20 transition-colors">
-                          Open
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
