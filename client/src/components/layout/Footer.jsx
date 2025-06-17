@@ -1,42 +1,87 @@
 import { Link } from 'react-router-dom';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaTwitter, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-dark text-white py-8">
+    <footer className="bg-primary text-white py-12">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo and Description */}
-          <div>
-            <Link to="/" className="text-2xl font-bold text-white">ScroolPortal</Link>
-            <p className="mt-4 text-gray-300">
-              An AI-integrated educational platform for students, teachers, HODs, and administrators.
+          <div className="md:col-span-1">
+            <Link to="/" className="flex items-center">
+              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-10 w-auto mr-2" />
+              <span className="text-2xl font-bold text-white font-display">Edu<span className="text-bright-green">Nex</span></span>
+            </Link>
+            <p className="mt-4 text-gray-300 font-body">
+              Transforming education through innovative technology and personalized learning experiences.
             </p>
+            <div className="mt-6 flex space-x-4">
+              <a href="#" className="text-gray-300 hover:text-bright-green transition-colors">
+                <FaTwitter className="w-5 h-5" />
+              </a>
+              <a href="#" className="text-gray-300 hover:text-bright-green transition-colors">
+                <FaFacebook className="w-5 h-5" />
+              </a>
+              <a href="#" className="text-gray-300 hover:text-bright-green transition-colors">
+                <FaInstagram className="w-5 h-5" />
+              </a>
+              <a href="#" className="text-gray-300 hover:text-bright-green transition-colors">
+                <FaLinkedin className="w-5 h-5" />
+              </a>
+            </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+            <h3 className="text-lg font-semibold mb-4 font-display">Quick Links</h3>
+            <ul className="space-y-2 font-body">
               <li>
-                <Link to="/" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/" className="text-gray-300 hover:text-bright-green transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/courses" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/courses" className="text-gray-300 hover:text-bright-green transition-colors">
                   Courses
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
-                  About
+                <Link to="/about" className="text-gray-300 hover:text-bright-green transition-colors">
+                  About Us
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/login" className="text-gray-300 hover:text-bright-green transition-colors">
                   Login
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 font-display">Resources</h3>
+            <ul className="space-y-2 font-body">
+              <li>
+                <Link to="/blog" className="text-gray-300 hover:text-bright-green transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link to="/support" className="text-gray-300 hover:text-bright-green transition-colors">
+                  Support Center
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="text-gray-300 hover:text-bright-green transition-colors">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="text-gray-300 hover:text-bright-green transition-colors">
+                  Privacy Policy
                 </Link>
               </li>
             </ul>
@@ -44,34 +89,27 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Contact</h3>
-            <ul className="space-y-2">
+            <h3 className="text-lg font-semibold mb-4 font-display">Contact</h3>
+            <ul className="space-y-3 font-body">
               <li className="flex items-start">
-                <svg className="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                </svg>
-                <span className="text-gray-300">contact@scroolportal.edu</span>
+                <FaEnvelope className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
+                <span className="text-gray-300">contact@edunex.edu</span>
               </li>
               <li className="flex items-start">
-                <svg className="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                </svg>
-                <span className="text-gray-300">+1 (555) 123-4567</span>
+                <FaPhone className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
+                <span className="text-gray-300">+1 (800) 123-4567</span>
               </li>
               <li className="flex items-start">
-                <svg className="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <span className="text-gray-300">123 Education St, Learning City, ED 12345</span>
+                <FaMapMarkerAlt className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
+                <span className="text-gray-300">100 Innovation Way, Tech City, TC 54321</span>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-          <p>&copy; {currentYear} ScroolPortal. All rights reserved.</p>
+        <div className="border-t border-gray-700 mt-10 pt-8 text-center text-gray-400 font-body">
+          <p>&copy; {currentYear} EduNex. All rights reserved.</p>
         </div>
       </div>
     </footer>

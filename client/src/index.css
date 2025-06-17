@@ -19,30 +19,51 @@ body {
 
 @layer base {
   body {
-    @apply font-['Inter'] text-[#1E1E1E] bg-white;
+    @apply font-poppins text-secondary bg-primary;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-['Poppins'] font-semibold;
+    @apply font-poppins font-medium;
+  }
+}
+
+@layer utilities {
+  .highlight-x {
+    color: #37B46E;
   }
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+    @apply px-4 py-2 font-medium transition-all duration-200;
   }
   .btn-primary {
-    @apply bg-primary text-white hover:bg-opacity-90;
+    @apply bg-rich-blue text-secondary hover:bg-opacity-90;
   }
   .btn-secondary {
-    @apply bg-secondary text-[#1E1E1E] hover:bg-opacity-90;
+    @apply bg-secondary text-primary hover:bg-opacity-90;
   }
   .btn-accent {
-    @apply bg-accent text-white hover:bg-opacity-90;
+    @apply bg-accent text-primary hover:bg-opacity-90;
+  }
+  .btn-green {
+    @apply bg-bright-green text-secondary hover:bg-opacity-90;
   }
   .card {
-    @apply bg-white rounded-lg shadow-md p-4;
+    @apply bg-rich-blue/10 border border-rich-blue/20 p-4;
   }
   .container {
     @apply mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  .logo-text {
+    @apply font-poppins font-medium tracking-wide;
+  }
+  .circuit-line {
+    @apply bg-bright-green;
+  }
+  .bulb-glow {
+    @apply text-accent;
+  }
+  .bulb-tip {
+    @apply text-light-yellow;
   }
 }

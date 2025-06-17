@@ -36,15 +36,18 @@ const About = () => {
       <div className="container mx-auto px-4">
         {/* About Section */}
         <section className="mb-16">
-          <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center">About ScroolPortal</h1>
+          <div className="flex flex-col items-center justify-center mb-8">
+            <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-20 w-auto mb-4" />
+            <h1 className="text-3xl md:text-4xl font-bold text-center font-display">About <span className="text-bright-green">EduNex</span></h1>
+          </div>
           
           <div className="max-w-3xl mx-auto">
             <p className="text-lg mb-6">
-              ScroolPortal is an innovative AI-integrated educational platform designed to transform the way educational institutions operate. Our mission is to provide a seamless experience for students, teachers, department heads, and administrators through role-based access and intelligent features.
+              EduNex is an innovative AI-integrated educational platform designed to transform the way educational institutions operate. Our mission is to provide a seamless experience for students, teachers, department heads, and administrators through role-based access and intelligent features.
             </p>
             
             <p className="text-lg mb-6">
-              Founded in 2023, ScroolPortal combines cutting-edge AI technology with educational expertise to create a platform that enhances learning outcomes, streamlines administrative tasks, and provides valuable insights through comprehensive analytics.
+              Founded in 2023, EduNex combines cutting-edge AI technology with educational expertise to create a platform that enhances learning outcomes, streamlines administrative tasks, and provides valuable insights through comprehensive analytics.
             </p>
             
             <p className="text-lg">

@@ -1,739 +1,428 @@
-import { useState, useEffect } from 'react';
-import { FaArrowRight, FaArrowLeft, FaBook, FaChalkboardTeacher, FaSchool, FaCalendarAlt, FaStar, FaGraduationCap, FaUserGraduate, FaLaptop } from 'react-icons/fa';
-import { motion, useAnimation, AnimatePresence } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
-import { 
-  FaChevronLeft,
-  FaChevronRight,
-  FaQuoteLeft 
-} from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaUserGraduate, FaStar, FaChalkboardTeacher, FaBook, FaGraduationCap, FaArrowRight } from 'react-icons/fa';
 
-const HeroSlider = ({ darkMode }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+const HeroSection = () => {
   const navigate = useNavigate();
 
-  const slides = [
-    {
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1800&q=80",
-      title: "Excellence in Education",
-      subtitle: "Nurturing young minds for a brighter future",
-      cta: "Explore Our Programs",
-      textPosition: "left"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1588072432836-e10032774350?ixlib=rb-1.2.1&auto=format&fit=crop&w=1800&q=80",
-      title: "Modern Learning Environment",
-      subtitle: "State-of-the-art facilities for 21st century learning",
-      cta: "Take a Virtual Tour",
-      textPosition: "right"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1800&q=80",
-      title: "Dedicated Educators",
-      subtitle: "Passionate teachers inspiring lifelong learning",
-      cta: "Meet Our Faculty",
-      textPosition: "center"
-    }
-  ];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isHovered) {
-        nextSlide();
-      }
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [isHovered]);
-
-  // Animation variants
-  const textVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.8, ease: "easeOut" }
-    },
-    exit: { opacity: 0, y: -50 }
-  };
-
-  const imageVariants = {
-    hidden: { opacity: 0, scale: 1.1 },
-    visible: { 
-      opacity: 1, 
-      scale: 1,
-      transition: { duration: 1.2, ease: "easeOut" }
-    },
-    exit: { opacity: 0, scale: 0.9 }
-  };
-
-  const getTextAlignment = (position) => {
-    switch(position) {
-      case 'left': return 'items-start text-left';
-      case 'right': return 'items-end text-right';
-      case 'center': return 'items-center text-center';
-      default: return 'items-start text-left';
-    }
-  };
-
   return (
-    <section 
-      className="relative h-screen w-full overflow-hidden pt-16"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Slider navigation arrows */}
-      <button 
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-      >
-        <FaChevronLeft className="text-xl" />
-      </button>
-      <button 
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-      >
-        <FaChevronRight className="text-xl" />
-      </button>
-
-      {/* Slide indicator dots */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index ? 'bg-white w-6' : 'bg-white/50'}`}
-          />
-        ))}
+    <section className="relative h-screen w-full overflow-hidden pt-16 bg-gradient-to-br from-primary to-rich-blue">
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-grid-pattern"></div>
       </div>
-
-      <AnimatePresence mode='wait'>
-        <motion.div
-          key={currentSlide}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          variants={imageVariants}
-          className="absolute inset-0 w-full h-full"
+      
+      <div className="container mx-auto h-full flex flex-col md:flex-row items-center justify-center px-6 md:px-10 lg:px-16">
+        {/* Left content */}
+        <div className="w-full md:w-1/2 text-left z-10 mb-10 md:mb-0">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight font-display mb-4"
+          >
+            Education for the <span className="text-bright-green">Digital Age</span>
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-xl text-white/90 font-body mb-8 max-w-lg"
+          >
+            A minimalist approach to learning that focuses on what matters most - your growth and development in a connected world.
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex flex-wrap gap-4"
+          >
+            <button 
+              className="bg-bright-green text-white py-3 px-8 rounded-md hover:bg-bright-green/90 transition-all duration-300 flex items-center justify-center font-medium"
+              onClick={() => navigate('/courses')}
+            >
+              Explore Courses <FaArrowRight className="ml-2" />
+            </button>
+            
+            <button 
+              className="bg-transparent border-2 border-white text-white py-3 px-8 rounded-md hover:bg-white/10 transition-all duration-300 font-medium"
+              onClick={() => navigate('/about')}
+            >
+              Learn More
+            </button>
+          </motion.div>
+        </div>
+        
+        {/* Right content - Illustration */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="w-full md:w-1/2 flex justify-center items-center z-10"
         >
-          <img 
-            src={slides[currentSlide].image} 
-            alt={slides[currentSlide].title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40"></div>
-        </motion.div>
-
-        {/* Text content */}
-        <motion.div
-          key={`text-${currentSlide}`}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          variants={textVariants}
-          className={`absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-24 z-10 ${getTextAlignment(slides[currentSlide].textPosition)}`}
-        >
-          <div className="max-w-2xl space-y-6">
-            <motion.h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
-              transition={{ delay: 0.2 }}
-            >
-              {slides[currentSlide].title}
-            </motion.h1>
-            <motion.p 
-              className="text-xl md:text-2xl text-white/90"
-              transition={{ delay: 0.4 }}
-            >
-              {slides[currentSlide].subtitle}
-            </motion.p>
-            <motion.div
-              transition={{ delay: 0.6 }}
-            >
-              <button 
-                className="mt-8 bg-white hover:bg-gray-100 text-indigo-700 font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center"
-                onClick={() => navigate('/programs')}
-              >
-                {slides[currentSlide].cta} <FaArrowRight className="ml-2" />
-              </button>
-            </motion.div>
+          <div className="relative w-full max-w-md">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-bright-green to-accent rounded-lg blur opacity-30"></div>
+            <div className="relative bg-primary/40 backdrop-blur-sm p-6 rounded-lg border border-white/10">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
+                  <FaGraduationCap className="text-bright-green text-2xl mr-3" />
+                  <div>
+                    <h3 className="text-white font-medium">Learn</h3>
+                    <p className="text-white/70 text-sm">At your pace</p>
+                  </div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
+                  <FaBook className="text-accent text-2xl mr-3" />
+                  <div>
+                    <h3 className="text-white font-medium">Study</h3>
+                    <p className="text-white/70 text-sm">Smart content</p>
+                  </div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
+                  <FaChalkboardTeacher className="text-bright-green text-2xl mr-3" />
+                  <div>
+                    <h3 className="text-white font-medium">Teach</h3>
+                    <p className="text-white/70 text-sm">Share knowledge</p>
+                  </div>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center">
+                  <FaUserGraduate className="text-accent text-2xl mr-3" />
+                  <div>
+                    <h3 className="text-white font-medium">Grow</h3>
+                    <p className="text-white/70 text-sm">Build skills</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
-      </AnimatePresence>
-
-      {/* Overlay gradient */}
-      <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black/70 to-transparent z-0"></div>
+      </div>
+      
+      {/* Decorative elements */}
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-primary to-transparent"></div>
     </section>
   );
 };
 
-const Home = ({ darkMode }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+const Home = () => {
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState('');
   const navigate = useNavigate();
-
-  // Animation controls for each section
-  const controls1 = useAnimation();
-  const controls2 = useAnimation();
-  const controls3 = useAnimation();
-  const controls4 = useAnimation();
-  const controls5 = useAnimation();
-  const controls6 = useAnimation();
-
-  // Intersection observers for each section
-  const [ref1, inView1] = useInView({ threshold: 0.1, triggerOnce: false });
-  const [ref2, inView2] = useInView({ threshold: 0.1, triggerOnce: false });
-  const [ref3, inView3] = useInView({ threshold: 0.1, triggerOnce: false });
-  const [ref4, inView4] = useInView({ threshold: 0.1, triggerOnce: false });
-  const [ref5, inView5] = useInView({ threshold: 0.1, triggerOnce: false });
-  const [ref6, inView6] = useInView({ threshold: 0.1, triggerOnce: false });
-
-  // Trigger animations when sections come into view
+  
   useEffect(() => {
-    if (inView1) controls1.start("visible");
-    else controls1.start("hidden");
-  }, [controls1, inView1]);
-
-  useEffect(() => {
-    if (inView2) controls2.start("visible");
-    else controls2.start("hidden");
-  }, [controls2, inView2]);
-
-  useEffect(() => {
-    if (inView3) controls3.start("visible");
-    else controls3.start("hidden");
-  }, [controls3, inView3]);
-
-  useEffect(() => {
-    if (inView4) controls4.start("visible");
-    else controls4.start("hidden");
-  }, [controls4, inView4]);
-
-  useEffect(() => {
-    if (inView5) controls5.start("visible");
-    else controls5.start("hidden");
-  }, [controls5, inView5]);
-
-  useEffect(() => {
-    if (inView6) controls6.start("visible");
-    else controls6.start("hidden");
-  }, [controls6, inView6]);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        setUser(session.user);
-
-        // Check each possible user table to find the user's role
-        const tables = ['admin', 'teacher', 'hod', 'student'];
-        let userData = null;
-        
-        for (const table of tables) {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (data && !error) {
-            userData = { ...data, role: table };
-            break;
-          }
-        }
-
-        setRole(userData?.role || null);
-      }
-    };
-
-    fetchUserData();
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setRole(localStorage.getItem('role') || '');
+    }
   }, []);
-
-  const teachers = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      subject: "Mathematics",
-      experience: "12 years",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      rating: 4.9
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      subject: "Science",
-      experience: "8 years",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      rating: 4.8
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      subject: "English Literature",
-      experience: "15 years",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      rating: 5.0
-    },
-    {
-      id: 4,
-      name: "David Wilson",
-      subject: "History",
-      experience: "10 years",
-      image: "https://images.unsplash.com/photo-1552058544-f2b08422138a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-      rating: 4.7
-    }
-  ];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === teachers.length - 1 ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? teachers.length - 1 : prev - 1));
-  };
-
+  
   const handleGetStarted = () => {
-    if (!user) {
-      navigate('/login');
-    } else if (role === 'Teacher') {
-      navigate('/profile');
-    } else if (role === 'Admin') {
-      navigate('/dashboard');
-    } else if (role === 'Student') {
-      navigate('/student-dashboard');
-    } else if (role === 'Parent') {
-      navigate('/parent-dashboard');
+    if (user) {
+      if (role === 'student') {
+        navigate('/student-dashboard');
+      } else if (role === 'teacher') {
+        navigate('/teacher-dashboard');
+      } else {
+        navigate('/courses');
+      }
     } else {
-      navigate('/profile');
-    }
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isHovered) {
-        nextSlide();
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [isHovered]);
-
-  // Animation variants
-  const container = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 40 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
-  };
-
-  const fadeInDown = {
-    hidden: { opacity: 0, y: -40 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
-  };
-
-  const fadeInLeft = {
-    hidden: { opacity: 0, x: -40 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
-  };
-
-  const fadeInRight = {
-    hidden: { opacity: 0, x: 40 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
+      navigate('/signup');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 overflow-x-hidden">
-      {/* Hero Slider Section */}
-      <HeroSlider darkMode={darkMode} />
+    <div className="min-h-screen bg-white overflow-x-hidden font-body">
+      {/* Hero Section */}
+      <HeroSection />
 
       {/* Stats Section */}
-      <section ref={ref1} className="py-16 px-4 md:px-8 bg-white -mt-12 relative z-10">
+      <section className="py-16 px-4 md:px-8 bg-white relative z-10">
         <div className="max-w-7xl mx-auto">
-          <motion.div 
-            initial="hidden"
-            animate={controls1}
-            variants={container}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8"
-          >
-            {[
-              { icon: <FaChalkboardTeacher className="text-3xl" />, number: "85+", text: "Expert Teachers", color: "bg-indigo-100 text-indigo-600" },
-              { icon: <FaUserGraduate className="text-3xl" />, number: "2.5K+", text: "Students Enrolled", color: "bg-purple-100 text-purple-600" },
-              { icon: <FaBook className="text-3xl" />, number: "30+", text: "Courses Offered", color: "bg-blue-100 text-blue-600" },
-              { icon: <FaGraduationCap className="text-3xl" />, number: "100%", text: "Success Rate", color: "bg-teal-100 text-teal-600" }
-            ].map((stat, index) => (
-              <motion.div 
-                key={index}
-                variants={item}
-                className={`p-6 rounded-2xl ${stat.color} flex flex-col items-center text-center shadow-md hover:shadow-lg transition-shadow duration-300`}
-              >
-                <div className="mb-4">{stat.icon}</div>
-                <h3 className="text-3xl font-bold mb-2">{stat.number}</h3>
-                <p className="text-gray-700 font-medium">{stat.text}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-primary">
+            Our <span className="text-bright-green">Impact</span> in Numbers
+          </h2>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
+              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FaUserGraduate className="text-bright-green text-xl" />
+              </div>
+              <h3 className="text-3xl font-bold text-primary mb-1">10K+</h3>
+              <p className="text-gray-600 text-sm">Students</p>
+            </div>
+            
+            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
+              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FaChalkboardTeacher className="text-bright-green text-xl" />
+              </div>
+              <h3 className="text-3xl font-bold text-primary mb-1">500+</h3>
+              <p className="text-gray-600 text-sm">Teachers</p>
+            </div>
+            
+            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
+              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FaBook className="text-bright-green text-xl" />
+              </div>
+              <h3 className="text-3xl font-bold text-primary mb-1">1,200+</h3>
+              <p className="text-gray-600 text-sm">Courses</p>
+            </div>
+            
+            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
+              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FaStar className="text-bright-green text-xl" />
+              </div>
+              <h3 className="text-3xl font-bold text-primary mb-1">98%</h3>
+              <p className="text-gray-600 text-sm">Success Rate</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section ref={ref2} className="py-16 px-4 md:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <motion.h2 
-            initial="hidden"
-            animate={controls2}
-            variants={fadeInDown}
-            className="text-3xl md:text-4xl font-bold text-gray-800 mb-4"
-          >
-            Powerful <span className="text-indigo-600">Features</span>
-          </motion.h2>
-          <motion.p 
-            initial="hidden"
-            animate={controls2}
-            variants={fadeInDown}
-            transition={{ delay: 0.2 }}
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
-          >
-            Everything you need to manage your educational institution effectively
-          </motion.p>
-        </div>
-        
-        <motion.div 
-          initial="hidden"
-          animate={controls2}
-          variants={container}
-          transition={{ delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
-          {[
-            {
-              icon: <FaChalkboardTeacher className="text-2xl text-indigo-600" />,
-              title: "Teacher Portal",
-              description: "Comprehensive tools for lesson planning, grading, and student progress tracking.",
-              color: "from-indigo-400 to-indigo-600"
-            },
-            {
-              icon: <FaUserGraduate className="text-2xl text-purple-600" />,
-              title: "Student Dashboard",
-              description: "Personalized learning space with assignments, grades, and resources.",
-              color: "from-purple-400 to-purple-600"
-            },
-            {
-              icon: <FaLaptop className="text-2xl text-blue-600" />,
-              title: "Online Learning",
-              description: "Virtual classrooms and digital resources for blended learning.",
-              color: "from-blue-400 to-blue-600"
-            },
-            {
-              icon: <FaCalendarAlt className="text-2xl text-teal-600" />,
-              title: "Attendance System",
-              description: "Automated attendance tracking with real-time notifications.",
-              color: "from-teal-400 to-teal-600"
-            },
-            {
-              icon: <FaSchool className="text-2xl text-orange-600" />,
-              title: "Administration Tools",
-              description: "Complete school management from admissions to reporting.",
-              color: "from-orange-400 to-orange-600"
-            },
-            {
-              icon: <FaBook className="text-2xl text-pink-600" />,
-              title: "Curriculum Management",
-              description: "Organize and distribute curriculum materials efficiently.",
-              color: "from-pink-400 to-pink-600"
-            }
-          ].map((feature, index) => (
-            <motion.div 
-              key={index}
-              variants={item}
-              className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100"
-            >
-              <div className={`bg-gradient-to-r ${feature.color} p-1 rounded-full w-16 h-16 flex items-center justify-center mb-6 mx-auto`}>
-                <div className="bg-white rounded-full w-full h-full flex items-center justify-center">
-                  {feature.icon}
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-center text-gray-800 mb-3">{feature.title}</h3>
-              <p className="text-gray-600 text-center">{feature.description}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Teachers Slider */}
-      <section ref={ref3} className="py-16 px-4 md:px-8 bg-gray-50">
+      <section className="py-16 px-4 md:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.h2 
-              initial="hidden"
-              animate={controls3}
-              variants={fadeInUp}
-              className="text-3xl md:text-4xl font-bold text-gray-800 mb-4"
-            >
-              Meet Our <span className="text-indigo-600">Faculty</span>
-            </motion.h2>
-            <motion.p 
-              initial="hidden"
-              animate={controls3}
-              variants={fadeInUp}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
-            >
-              Our team of dedicated and experienced educators
-            </motion.p>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">Why Choose <span className="text-bright-green">EduNex</span></h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">A minimalist approach to education with powerful features</p>
           </div>
           
-          <motion.div 
-            initial="hidden"
-            animate={controls3}
-            variants={fadeInUp}
-            transition={{ delay: 0.4 }}
-            className="relative"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="relative w-full overflow-hidden">
-              <div className="flex snap-x snap-mandatory overflow-x-auto pb-8 -mx-4 px-4 hide-scrollbar">
-                {teachers.map((teacher, index) => (
-                  <div 
-                    key={teacher.id}
-                    className="flex-shrink-0 snap-center px-4 w-full sm:w-1/2 md:w-1/3 lg:w-1/4"
-                  >
-                    <motion.div
-                      whileHover={{ y: -5 }}
-                      className="bg-white rounded-xl shadow-md overflow-hidden h-full flex flex-col"
-                    >
-                      <div className="relative pt-8 px-8">
-                        <div className="relative w-32 h-32 mx-auto">
-                          <img 
-                            src={teacher.image} 
-                            alt={teacher.name} 
-                            className="w-full h-full object-cover rounded-full border-4 border-indigo-100"
-                          />
-                          <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white rounded-full w-10 h-10 flex items-center justify-center">
-                            <FaChalkboardTeacher className="text-sm" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-6 text-center mt-4 flex-grow">
-                        <h3 className="text-xl font-bold text-gray-800">{teacher.name}</h3>
-                        <p className="text-indigo-600 mb-2">{teacher.subject}</p>
-                        <p className="text-gray-600 text-sm mb-4">{teacher.experience} experience</p>
-                        
-                        <div className="flex justify-center items-center mb-4">
-                          {[...Array(5)].map((_, i) => (
-                            <FaStar 
-                              key={i} 
-                              className={`text-lg ${i < Math.floor(teacher.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
-                            />
-                          ))}
-                          <span className="ml-2 text-gray-700 text-sm">{teacher.rating}</span>
-                        </div>
-                        
-                        <div className="flex flex-wrap justify-center gap-2 mb-4">
-                          <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-                            Interactive
-                          </span>
-                          <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-                            Engaging
-                          </span>
-                          <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-                            Supportive
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border-t-4 border-bright-green">
+              <div className="flex items-start mb-4">
+                <div className="bg-bright-green/10 p-3 rounded-md mr-4">
+                  <FaUserGraduate className="text-bright-green text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold mb-2 text-primary">Personalized Learning</h3>
+                  <p className="text-gray-600 text-sm">Adaptive curriculum that adjusts to each student's unique learning style and pace.</p>
+                </div>
               </div>
             </div>
             
-            <button 
-              onClick={prevSlide}
-              className="absolute left-0 top-1/2 -translate-y-1/2 bg-white hover:bg-indigo-100 text-indigo-700 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 border border-gray-200 z-10"
-            >
-              <FaChevronLeft />
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border-t-4 border-bright-green">
+              <div className="flex items-start mb-4">
+                <div className="bg-bright-green/10 p-3 rounded-md mr-4">
+                  <FaChalkboardTeacher className="text-bright-green text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold mb-2 text-primary">Expert Educators</h3>
+                  <p className="text-gray-600 text-sm">Learn from industry professionals and experienced teachers with proven track records.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border-t-4 border-bright-green">
+              <div className="flex items-start mb-4">
+                <div className="bg-bright-green/10 p-3 rounded-md mr-4">
+                  <FaBook className="text-bright-green text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold mb-2 text-primary">Modern Curriculum</h3>
+                  <p className="text-gray-600 text-sm">Up-to-date course materials designed for today's digital world and future careers.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Teachers Section */}
+      <section className="py-16 px-4 md:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">Our <span className="text-bright-green">Expert</span> Teachers</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">Meet the educators who will guide your learning journey</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  alt="Sarah Johnson"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-primary">Sarah Johnson</h3>
+                <p className="text-bright-green text-sm mb-2">Mathematics</p>
+                <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <span className="mr-2">8+ Years</span>
+                  <span className="flex items-center"><FaStar className="text-yellow-500 mr-1" /> 4.9</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  alt="David Chen"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-primary">David Chen</h3>
+                <p className="text-bright-green text-sm mb-2">Computer Science</p>
+                <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <span className="mr-2">10+ Years</span>
+                  <span className="flex items-center"><FaStar className="text-yellow-500 mr-1" /> 4.8</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  alt="Maria Rodriguez"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-primary">Maria Rodriguez</h3>
+                <p className="text-bright-green text-sm mb-2">Literature</p>
+                <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <span className="mr-2">12+ Years</span>
+                  <span className="flex items-center"><FaStar className="text-yellow-500 mr-1" /> 4.9</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" 
+                  alt="James Wilson"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-primary">James Wilson</h3>
+                <p className="text-bright-green text-sm mb-2">Physics</p>
+                <div className="flex items-center text-xs text-gray-500 mb-3">
+                  <span className="mr-2">9+ Years</span>
+                  <span className="flex items-center"><FaStar className="text-yellow-500 mr-1" /> 4.7</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-8">
+            <button className="px-6 py-2 bg-white text-primary border border-primary rounded-md hover:bg-primary hover:text-white transition-colors duration-300 text-sm font-medium">
+              View All Teachers
             </button>
-            <button 
-              onClick={nextSlide}
-              className="absolute right-0 top-1/2 -translate-y-1/2 bg-white hover:bg-indigo-100 text-indigo-700 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 border border-gray-200 z-10"
-            >
-              <FaChevronRight />
-            </button>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section ref={ref4} className="py-16 px-4 md:px-8 bg-white">
+      <section className="py-16 px-4 md:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.h2 
-              initial="hidden"
-              animate={controls4}
-              variants={fadeInDown}
-              className="text-3xl md:text-4xl font-bold text-gray-800 mb-4"
-            >
-              Community <span className="text-indigo-600">Testimonials</span>
-            </motion.h2>
-            <motion.p 
-              initial="hidden"
-              animate={controls4}
-              variants={fadeInDown}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
-            >
-              Hear what people are saying about our institution
-            </motion.p>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">Student <span className="text-bright-green">Testimonials</span></h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">What our community has to say about their learning experience</p>
           </div>
           
-          <motion.div 
-            initial="hidden"
-            animate={controls4}
-            variants={container}
-            transition={{ delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {[
-              {
-                quote: "This platform has transformed how we manage our school. The communication tools between teachers and parents are exceptional.",
-                author: "Robert Johnson",
-                role: "School Principal",
-                image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-                rating: 5
-              },
-              {
-                quote: "As a parent, I love being able to track my child's progress in real-time. The mobile app makes it so convenient!",
-                author: "Maria Garcia",
-                role: "Parent",
-                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-                rating: 4
-              },
-              {
-                quote: "The gradebook and lesson planning tools have saved me hours each week. I can focus more on teaching!",
-                author: "James Wilson",
-                role: "Teacher",
-                image: "https://images.unsplash.com/photo-1552058544-f2b08422138a?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80",
-                rating: 5
-              }
-            ].map((testimonial, index) => (
-              <motion.div 
-                key={index}
-                variants={item}
-                className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="relative mr-4">
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.author} 
-                      className="w-14 h-14 rounded-full object-cover border-2 border-indigo-100"
-                    />
-                    <div className="absolute -bottom-1 -right-1 bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                      <FaQuoteLeft className="text-xs" />
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-800">{testimonial.author}</h4>
-                    <p className="text-indigo-600 text-sm">{testimonial.role}</p>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex text-yellow-500 mb-4">
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar />
+              </div>
+              <p className="text-gray-600 text-sm mb-6">"The personalized learning approach has transformed my academic performance. I'm more engaged and confident than ever before."</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+                  <span className="font-bold">AK</span>
                 </div>
-                
-                <div className="flex mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar 
-                      key={i} 
-                      className={`text-sm ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                    />
-                  ))}
+                <div>
+                  <h4 className="font-medium text-primary text-sm">Aisha Khan</h4>
+                  <p className="text-gray-500 text-xs">Student</p>
                 </div>
-                
-                <p className="text-gray-700 italic">"{testimonial.quote}"</p>
-              </motion.div>
-            ))}
-          </motion.div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex text-yellow-500 mb-4">
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar />
+              </div>
+              <p className="text-gray-600 text-sm mb-6">"As a parent, I've seen remarkable improvement in my son's grades and interest in learning. The teachers are exceptional and truly care."</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+                  <span className="font-bold">JM</span>
+                </div>
+                <div>
+                  <h4 className="font-medium text-primary text-sm">John Miller</h4>
+                  <p className="text-gray-500 text-xs">Parent</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex text-yellow-500 mb-4">
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar />
+                <FaStar className="text-gray-300" />
+              </div>
+              <p className="text-gray-600 text-sm mb-6">"The interactive lessons and real-world applications have made teaching more effective. Students are more engaged and show better results."</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
+                  <span className="font-bold">LP</span>
+                </div>
+                <div>
+                  <h4 className="font-medium text-primary text-sm">Lisa Patel</h4>
+                  <p className="text-gray-500 text-xs">Teacher</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section ref={ref5} className="py-20 px-4 md:px-8 bg-gradient-to-r from-indigo-600 to-purple-700 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-        <div className="absolute top-0 right-0 w-full h-full overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-400 rounded-full filter blur-3xl opacity-20"></div>
-          <div className="absolute -bottom-40 -left-20 w-96 h-96 bg-purple-300 rounded-full filter blur-3xl opacity-20"></div>
-        </div>
-        
-        <div className="relative max-w-4xl mx-auto text-center">
-          <motion.h2 
-            initial="hidden"
-            animate={controls5}
-            variants={fadeInUp}
-            className="text-3xl md:text-4xl font-bold mb-6"
-          >
-            Ready to transform your school's management?
-          </motion.h2>
-          <motion.p 
-            initial="hidden"
-            animate={controls5}
-            variants={fadeInUp}
-            transition={{ delay: 0.2 }}
-            className="text-xl mb-10 opacity-90"
-          >
-            Join hundreds of educational institutions using our platform to streamline their operations.
-          </motion.p>
-          <motion.div
-            initial="hidden"
-            animate={controls5}
-            variants={fadeInUp}
-            transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row justify-center gap-4"
-          >
-            <button className="bg-white hover:bg-gray-100 text-indigo-700 font-bold py-4 px-12 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg" onClick={()=>navigate('/signup')}>
-              Request a Demo
-            </button>
-            <button className="bg-transparent hover:bg-white/10 border-2 border-white/50 text-white font-bold py-4 px-12 rounded-full transition-all duration-300 transform hover:scale-105 hover:border-white/80 text-lg" onClick={()=>navigate('/contact')}>
-              Contact Us
-            </button>
-          </motion.div>
+      <section className="py-16 px-4 md:px-8 bg-primary">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="p-8 md:p-12 md:w-2/3">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">Start Your <span className="text-bright-green">Learning Journey</span> Today</h2>
+              <p className="text-gray-600 mb-6 max-w-lg">Join our community of learners and discover a world of knowledge with personalized education tailored to your needs.</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button 
+                  onClick={handleGetStarted}
+                  className="px-6 py-2 bg-bright-green text-white rounded-md hover:bg-bright-green/90 transition-colors duration-300 text-sm font-medium"
+                >
+                  Get Started
+                </button>
+                <button className="px-6 py-2 bg-white text-primary border border-primary rounded-md hover:bg-primary/5 transition-colors duration-300 text-sm font-medium">
+                  Learn More
+                </button>
+              </div>
+            </div>
+            <div className="hidden md:block md:w-1/3 bg-gradient-to-br from-primary/10 to-bright-green/10 h-full p-12">
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="bg-white rounded-full w-20 h-20 mx-auto flex items-center justify-center shadow-sm mb-4">
+                    <FaGraduationCap className="text-3xl text-bright-green" />
+                  </div>
+                  <p className="text-primary font-medium">Education for Everyone</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -137,9 +137,16 @@ const Sidebar = ({ userRole, onLogout }) => {
       >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4 border-b">
-        {!isCollapsed && (
-          <Link to="/" className="text-xl font-bold text-primary">
-            ScroolPortal
+        {!isCollapsed ? (
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-8 w-auto" />
+            <span className="text-xl font-display text-primary">
+              Edu<span className="text-bright-green">Nex</span>
+            </span>
+          </Link>
+        ) : (
+          <Link to="/" className="flex justify-center">
+            <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-8 w-auto" />
           </Link>
         )}
         <button

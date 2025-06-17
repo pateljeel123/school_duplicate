@@ -198,12 +198,15 @@ const Login = ({ onLogin }) => {
               {/* Abstract pattern overlay */}
               <div className="absolute inset-0 bg-pattern-dots"></div>
             </div>
-            <h2 className="text-2xl font-bold text-center text-white relative z-10">
-              Welcome to SchoolPortal
-            </h2>
-            <p className="text-center text-blue-100 mt-2 relative z-10">
-              Sign in to access your account
-            </p>
+            <div className="flex flex-col items-center justify-center relative z-10">
+              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <h2 className="text-2xl font-bold text-center text-white font-display">
+                Welcome to <span className="text-bright-green">EduNex</span>
+              </h2>
+              <p className="text-center text-blue-100 mt-2">
+                Sign in to access your account
+              </p>
+            </div>
           </div>
           
           <div className="p-8">
