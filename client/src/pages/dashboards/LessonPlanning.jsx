@@ -9,6 +9,7 @@ const LessonPlanning = () => {
   const [topicName, setTopicName] = useState('');
   const [duration, setDuration] = useState('');
   const [language, setLanguage] = useState('english');
+  const [standard, setStandard] = useState('6-8'); // Add standard state variable with default value
   const [showLessonPlan, setShowLessonPlan] = useState(false);
   const [savedPlans, setSavedPlans] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -220,7 +221,8 @@ const LessonPlanning = () => {
         template.title,
         topicName,
         duration,
-        language
+        language,
+        standard // Pass standard to the API
       );
       
       // Handle the response from the server
@@ -312,6 +314,7 @@ const LessonPlanning = () => {
         topicName,
         duration,
         language,
+        standard, // Add standard to saved plan
         createdAt: new Date().toISOString()
       };
       
@@ -649,14 +652,40 @@ const LessonPlanning = () => {
                       {plan.story.title && (
                         <h4 className="font-semibold text-indigo-800 text-xl mb-4 border-b border-indigo-100 pb-2">{plan.story.title}</h4>
                       )}
-                      {plan.story.example && plan.story.application ? (
+                      {plan.story.plot && Array.isArray(plan.story.plot) ? (
+                        <div className="space-y-4">
+                          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 rounded-lg border border-indigo-200 shadow-inner">
+                            <h5 className="font-medium text-indigo-700 mb-3 flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                              <span>कहानी</span>
+                              <span className="ml-2 text-sm text-indigo-500">(Story)</span>
+                            </h5>
+                            <div className="relative">
+                              <div className="absolute top-0 bottom-0 left-7 w-0.5 bg-gradient-to-b from-indigo-300 to-purple-300"></div>
+                              <div className="space-y-4 pl-10">
+                                {plan.story.plot.map((paragraph, idx) => (
+                                  <div key={idx} className="relative animate-fadeIn" style={{animationDelay: `${0.1 * (idx + 1)}s`}}>
+                                    <div className="absolute -left-10 top-0 w-6 h-6 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                                      {idx + 1}
+                                    </div>
+                                    <p className="text-gray-700 leading-relaxed italic">{paragraph}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : plan.story.example && plan.story.application ? (
                         <div className="space-y-4">
                           <div className="bg-indigo-50 p-5 rounded-lg border border-indigo-200 shadow-inner">
                             <h5 className="font-medium text-indigo-700 mb-2 flex items-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                               </svg>
-                              Story:
+                              <span>कहानी</span>
+                              <span className="ml-2 text-sm text-indigo-500">(Story)</span>
                             </h5>
                             <p className="text-gray-700 leading-relaxed italic pl-7">{plan.story.example}</p>
                           </div>
@@ -665,7 +694,8 @@ const LessonPlanning = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                               </svg>
-                              Moral:
+                              <span>नैतिक शिक्षा</span>
+                              <span className="ml-2 text-sm text-indigo-500">(Moral)</span>
                             </h5>
                             <p className="text-gray-700 leading-relaxed italic pl-7">{plan.story.application}</p>
                           </div>
@@ -727,10 +757,25 @@ const LessonPlanning = () => {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-gray-700 leading-relaxed bg-orange-50 p-4 rounded-lg shadow-inner">
-                                {example.description || example.content || 
-                                 (typeof example === 'object' ? JSON.stringify(example) : String(example))}
-                              </p>
+                              <div className="bg-orange-50 p-4 rounded-lg shadow-inner space-y-4">
+                                {/* Display all properties of the example object in a structured way */}
+                                {Object.entries(example).map(([key, value], i) => (
+                                  <div key={i} className="border-b border-orange-100 pb-3 last:border-b-0 last:pb-0">
+                                    <h5 className="font-medium text-orange-700 mb-2 capitalize">{key}:</h5>
+                                    <p className="text-gray-700 leading-relaxed pl-4">
+                                      {typeof value === 'object' ? 
+                                        Object.entries(value).map(([subKey, subValue], j) => (
+                                          <div key={j} className="mb-2 last:mb-0">
+                                            <span className="font-medium capitalize">{subKey}: </span>
+                                            <span>{typeof subValue === 'object' ? JSON.stringify(subValue) : String(subValue)}</span>
+                                          </div>
+                                        ))
+                                        : String(value)
+                                      }
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
                         ) : (
@@ -740,8 +785,30 @@ const LessonPlanning = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-700 leading-relaxed">{typeof plan.realWorldExamples === 'object' ? 
-                    JSON.stringify(plan.realWorldExamples) : String(plan.realWorldExamples)}</p>
+                  <div className="bg-orange-50 p-5 rounded-lg border border-orange-200 shadow-inner">
+                    {typeof plan.realWorldExamples === 'object' ? (
+                      <div className="space-y-4">
+                        {Object.entries(plan.realWorldExamples).map(([key, value], idx) => (
+                          <div key={idx} className="border-b border-orange-100 pb-3 last:border-b-0 last:pb-0">
+                            <h5 className="font-medium text-orange-700 mb-2 capitalize">{key}:</h5>
+                            <div className="text-gray-700 leading-relaxed pl-4">
+                              {typeof value === 'object' ? 
+                                Object.entries(value).map(([subKey, subValue], j) => (
+                                  <div key={j} className="mb-2 last:mb-0">
+                                    <span className="font-medium capitalize">{subKey}: </span>
+                                    <span>{typeof subValue === 'object' ? JSON.stringify(subValue) : String(subValue)}</span>
+                                  </div>
+                                ))
+                                : String(value)
+                              }
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 leading-relaxed">{String(plan.realWorldExamples)}</p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1133,7 +1200,7 @@ const LessonPlanning = () => {
                 <input
                   id="topic"
                   type="text"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-black"
                   value={topicName}
                   onChange={(e) => setTopicName(e.target.value)}
                   placeholder="e.g., Photosynthesis, World War II"
@@ -1149,7 +1216,7 @@ const LessonPlanning = () => {
                 <input
                   id="duration"
                   type="number"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-black"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="e.g., 45, 60, 90"
@@ -1165,7 +1232,7 @@ const LessonPlanning = () => {
                 </label>
                 <select
                   id="language"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none appearance-none bg-white"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none appearance-none bg-white text-black"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
                   style={{ backgroundImage: "url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M6 9l6 6 6-6%22/></svg>')" ,
@@ -1178,6 +1245,27 @@ const LessonPlanning = () => {
                   <option value="gujarati">Gujarati</option>
                 </select>
                 <p className="text-xs text-gray-500">Select the language for your lesson plan</p>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="block text-gray-700 font-medium" htmlFor="standard">
+                  Student Standard (Grade Level)
+                </label>
+                <select
+                  id="standard"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none appearance-none bg-white text-black"
+                  value={standard}
+                  onChange={(e) => setStandard(e.target.value)}
+                  style={{ backgroundImage: "url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M6 9l6 6 6-6%22/></svg>')" ,
+                           backgroundRepeat: 'no-repeat',
+                           backgroundPosition: 'right 10px center',
+                           paddingRight: '30px' }}
+                >
+                  <option value="1-5">Grades 1-5 (Elementary)</option>
+                  <option value="6-8">Grades 6-8 (Middle School)</option>
+                  <option value="9+">Grades 9+ (High School)</option>
+                </select>
+                <p className="text-xs text-gray-500">Select the student's grade level for appropriate content</p>
               </div>
               
               <div className="flex justify-end space-x-4 pt-4 border-t border-gray-100">
