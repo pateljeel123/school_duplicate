@@ -176,7 +176,8 @@ export const lessonPlanningService = {
     templateType,
     topicName,
     duration,
-    language = "english"
+    language = "english",
+    standard = "6-8"
   ) => {
     try {
       const response = await teacherApi.post("/api/lesson-plans/generate", {
@@ -184,6 +185,7 @@ export const lessonPlanningService = {
         topicName,
         duration,
         language,
+        standard,
       });
       return response.data;
     } catch (error) {
