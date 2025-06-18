@@ -447,9 +447,11 @@ export const authService = {
     const token = localStorage.getItem("authToken");
     const role = localStorage.getItem("userRole");
     const id = localStorage.getItem("userId");
+    const name = localStorage.getItem("userName") || "उपयोगकर्ता";
+    const email = localStorage.getItem("userEmail") || "user@example.com";
 
     if (token && role && id) {
-      return { token, role, id };
+      return { token, role, id, name, email };
     }
     return null;
   },

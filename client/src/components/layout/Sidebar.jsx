@@ -44,7 +44,11 @@ const Sidebar = ({ userRole, onLogout }) => {
         icon: <HomeIcon className="w-6 h-6" />,
         path: `/dashboard/${userRole}`,
       },
-      // Profile page removed as requested
+      {
+        name: 'Profile',
+        icon: <UserCircleIcon className="w-6 h-6" />,
+        path: `/dashboard/${userRole}/profile`,
+      },
     ];
     // For teacher role, show Lesson Planning and Student Analytics points
     if (userRole === 'teacher') {

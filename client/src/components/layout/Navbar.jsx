@@ -63,9 +63,6 @@ const Navbar = ({ isAuthenticated, userRole, onLogout }) => {
             <NavLink to="/" isActive={isActive('/')}>
               Home
             </NavLink>
-            <NavLink to="/courses" isActive={isActive('/courses')}>
-              Courses
-            </NavLink>
             <NavLink to="/about" isActive={isActive('/about')}>
               About
             </NavLink>

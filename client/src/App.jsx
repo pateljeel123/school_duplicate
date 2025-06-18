@@ -29,6 +29,7 @@ import AdminUsers from './pages/dashboards/AdminUsers'
 import AdminAnalytics from './pages/dashboards/AdminAnalytics'
 import AdminSettings from './pages/dashboards/AdminSettings'
 import LessonPlanning from './pages/dashboards/LessonPlanning'
+import Profile from './pages/dashboards/Profile'
 
 // Components
 import Navbar from './components/layout/Navbar'
@@ -292,7 +293,14 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Profile page route removed */}
+        {/* Profile Page Route */}
+        <Route path="/dashboard/:role/profile" element={
+          <ProtectedRoute isAuthenticated={isAuthenticated} requiredRole={userRole} userRole={userRole}>
+            <DashboardLayout userRole={userRole} onLogout={handleLogout}>
+              <Profile />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
         
         {/* Auth Callback Route */}
         <Route path="/auth/callback" element={<AuthCallback />} />
