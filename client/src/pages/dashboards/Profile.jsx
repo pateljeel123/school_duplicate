@@ -1,697 +1,1304 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import { userService, authService } from '../../services/api';
-import { getAuthSession, updateUserProfile } from '../../services/supabaseModel';
+import { supabase } from "../../services/supabaseClient";
 import {
-  UserCircleIcon,
-  AcademicCapIcon,
-  IdentificationIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  PencilSquareIcon,
-  CheckIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
-import { supabase } from '../../services/supabaseClient';
-import defaultUserImage from '../../assets/user.jpg';
+  User,
+  Edit3,
+  Save,
+  X,
+  Upload,
+  Phone,
+  Book,
+  Calendar,
+  Users,
+  Award,
+  Home,
+  Lock,
+  Mail,
+  Briefcase,
+  BookOpen,
+  Star,
+  Shield,
+} from "react-feather";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
+import { School } from "lucide-react";
 
 const Profile = () => {
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [tempProfileImage, setTempProfileImage] = useState(null);
+  const [userRole, setUserRole] = useState("");
   const [formData, setFormData] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [identityData, setIdentityData] = useState(null);
-  
-  const currentUser = authService.getCurrentUser();
-  const userRole = currentUser?.role || '';
-  const userId = currentUser?.id || '';
+  const [tempFormData, setTempFormData] = useState({});
 
-  // Get additional user data from Supabase session
-  useEffect(() => {
-    supabase.auth.getSession().then((res) => {
-      if (res.data.session?.user?.identities?.[0]?.identity_data) {
-        setIdentityData(res.data.session.user.identities[0].identity_data);
-      }
-    });
-  }, []);
-
+  // For scroll animations
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  // These variables can be used for parallax effects if needed
+  // Keeping them commented for future use
+  // const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  // const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchUserProfile = async () => {
+      setIsLoading(true);
       try {
-        // Get user data from Supabase auth session
-        const { session, userData, error: sessionError } = await getAuthSession();
-        
-        if (sessionError) {
-          throw sessionError;
-        }
-        
-        // If we have userData from the database, use it
-        if (userData) {
-          setUserData(userData);
-          setFormData(userData);
-        } else {
-          // Otherwise, use data from session and localStorage
-          const currentUser = authService.getCurrentUser();
-          
-          // Create profile data from current session with correct field names based on database schema
-          const baseProfileData = {
-            id: currentUser?.id || session?.user?.id || '',
-            fullname: currentUser?.name || session?.user?.user_metadata?.full_name || 'User',
-            email: currentUser?.email || session?.user?.email || 'user@example.com',
-            role: currentUser?.role || userRole,
-            // Default values for other fields
-            phonenumber: '',
-            address: '',
-            gender: ''
-          };
-          
-          // Add role-specific fields based on database schema
-          let profileData = { ...baseProfileData };
-          
-          if (userRole === 'teacher') {
-            profileData = {
-              ...profileData,
-              subject_expertise: '',
-              highest_qualification: '',
-              experience: '',
-              teaching_level: '',
-              bio: ''
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          // Get user role from local storage
+          const storedRole = localStorage.getItem("userRole");
+          setUserRole(storedRole || "student");
+
+          // Determine which table to query based on role
+          const tableName = storedRole || "student";
+
+          const { data, error } = await supabase
+            .from(tableName)
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            // Common fields for all roles
+            const commonFields = {
+              fullname: data.fullname || "",
+              email: data.email || "",
+              phonenumber: data.phonenumber || "",
+              role: data.role || tableName,
+              gender: data.gender || "",
+              address: data.address || "",
+              dob: data.dob || "",
             };
-          } else if (userRole === 'student') {
-            profileData = {
-              ...profileData,
-              std: '',
-              roll_no: '',
-              dob: '',
-              parents_name: '',
-              parents_num: '',
-              previous_school: '',
-              stream: ''
-            };
-          } else if (userRole === 'hod') {
-            profileData = {
-              ...profileData,
-              department_expertise: '',
-              highest_qualification: '',
-              experience: '',
-              vision_department: ''
-            };
-          } else if (userRole === 'admin') {
-            profileData = {
-              ...profileData,
-              admin_access_level: ''
-            };
+
+            // Role-specific fields
+            let roleSpecificFields = {};
+
+            if (tableName === "student") {
+              roleSpecificFields = {
+                roll_no: data.roll_no || "",
+                std: data.std || "",
+                stream: data.stream || "",
+                parents_name: data.parents_name || "",
+                parents_num: data.parents_num || "",
+                previous_school: data.previous_school || "",
+                status: data.status || "",
+              };
+            } else if (tableName === "teacher") {
+              roleSpecificFields = {
+                experience: data.experience || 0,
+                subject_expertise: data.subject_expertise || "",
+                highest_qualification: data.highest_qualification || "",
+                teaching_level: data.teaching_level || "",
+                bio: data.bio || "",
+                status: data.status || "",
+                security_questions: data.security_questions || "",
+              };
+            } else if (tableName === "hod") {
+              roleSpecificFields = {
+                experience: data.experience || 0,
+                department_expertise: data.department_expertise || "",
+                highest_qualification: data.highest_qualification || "",
+                vision_department: data.vision_department || "",
+                status: data.status || "",
+              };
+            } else if (tableName === "admin") {
+              roleSpecificFields = {
+                admin_access_level: data.admin_access_level || "",
+                status: data.status || "",
+                updated_at: data.updated_at || "",
+                security_questions: data.security_questions || "",
+              };
+            }
+
+            setFormData({
+              ...commonFields,
+              ...roleSpecificFields,
+            });
+            setProfileImage(data.avatar_url);
           }
-          
-          setUserData(profileData);
-          setFormData(profileData);
         }
-      } catch (err) {
-        console.error('Error getting user data:', err);
-        setError('There was a problem loading profile data. Please try again.');
+      } catch (error) {
+        console.error("Error fetching profile:", error.message);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-    
-    fetchUserData();
-  }, [userRole]);
+    fetchUserProfile();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setTempFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditStart = () => {
+    setTempFormData({ ...formData });
+    setTempProfileImage(profileImage);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setTempProfileImage(null);
+  };
+
+  const handleImageUpload = async (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.match("image.*")) {
+        alert("Please select an image file");
+        return;
+      }
+
+      // Store the file temporarily
+      const objectUrl = URL.createObjectURL(file);
+      setTempProfileImage(objectUrl);
+    } catch (error) {
+      console.error("Error uploading image:", error.message);
+      alert("Error selecting image. Please try again.");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
+    setIsLoading(true);
+
     try {
-      let response;
-      
-      // Update user data using supabaseModel
-      const { data, error } = await updateUserProfile(userRole, userId, formData);
-      
-      if (error) {
-        throw error;
-      }
-      
-      response = { data, message: 'Profile updated successfully' };
-      
-      // As a fallback, also update using userService
-      try {
-        switch(userRole) {
-          case 'teacher':
-            await userService.updateTeacher(userId, formData);
-            break;
-          case 'student':
-            await userService.updateStudent(userId, formData);
-            break;
-          case 'hod':
-            await userService.updateHod(userId, formData);
-            break;
-          case 'admin':
-            // For admin, no additional update needed
-            break;
-          default:
-            console.log('Invalid user role');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user logged in");
+
+      let newProfileImage = profileImage;
+
+      // Only process image if a new one was selected
+      if (tempProfileImage && tempProfileImage !== profileImage) {
+        const fileInput = document.querySelector('input[type="file"]');
+        const file = fileInput?.files?.[0];
+
+        if (file) {
+          // 1. Delete old image if exists
+          if (profileImage && profileImage.includes("schoolimages")) {
+            try {
+              const oldImagePath = profileImage.split("schoolimages/")[1];
+              if (oldImagePath) {
+                const { error: deleteError } = await supabase.storage
+                  .from("schoolimages")
+                  .remove([oldImagePath]);
+
+                if (deleteError)
+                  console.warn("Error deleting old image:", deleteError);
+              }
+            } catch (deleteError) {
+              console.error("Error deleting old image:", deleteError);
+            }
+          }
+
+          // 2. Upload new image with unique filename
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+          const filePath = fileName; // You can also use subfolders like `profile-images/${fileName}`
+
+          const { error: uploadError } = await supabase.storage
+            .from("schoolimages")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: true,
+              contentType: file.type,
+            });
+
+          if (uploadError) throw uploadError;
+
+          // 3. Get public URL
+          const {
+            data: { publicUrl },
+          } = await supabase.storage
+            .from("schoolimages")
+            .getPublicUrl(filePath);
+
+          newProfileImage = publicUrl;
         }
-      } catch (serviceError) {
-        console.error('Error updating with userService:', serviceError);
-        // Continue with the flow as we already updated with supabaseModel
       }
-      
-      // Update localStorage with new user data
-      if (formData.name) {
-        localStorage.setItem('userName', formData.name);
+
+      // 4. Update profile in database based on user role
+      const tableName = userRole || "student";
+
+      // Prepare data based on role
+      let updateData = { avatar_url: newProfileImage };
+
+      // Common fields for all roles
+      const commonFields = [
+        "fullname",
+        "email",
+        "phonenumber",
+        "gender",
+        "address",
+      ];
+
+      // Add common fields to update data
+      commonFields.forEach((field) => {
+        if (tempFormData[field] !== undefined) {
+          updateData[field] = tempFormData[field];
+        }
+      });
+
+      // Role-specific fields
+      if (tableName === "student") {
+        const studentFields = [
+          "roll_no",
+          "std",
+          "stream",
+          "dob",
+          "parents_name",
+          "parents_num",
+          "previous_school",
+          "status",
+        ];
+        studentFields.forEach((field) => {
+          if (tempFormData[field] !== undefined) {
+            updateData[field] = tempFormData[field];
+          }
+        });
+      } else if (tableName === "teacher") {
+        // Map teacher fields based on schema
+        const teacherFields = [
+          "subject_expertise",
+          "experience",
+          "teaching_level",
+          "highest_qualification",
+          "bio",
+          "status",
+          "security_questions",
+        ];
+        teacherFields.forEach((field) => {
+          if (tempFormData[field] !== undefined) {
+            updateData[field] = tempFormData[field];
+          }
+        });
+      } else if (tableName === "hod") {
+        // Map HOD fields based on schema
+        const hodFields = [
+          "department_expertise",
+          "experience",
+          "vision_department",
+          "highest_qualification",
+          "status",
+        ];
+        hodFields.forEach((field) => {
+          if (tempFormData[field] !== undefined) {
+            updateData[field] = tempFormData[field];
+          }
+        });
+      } else if (tableName === "admin") {
+        // Map admin fields based on schema
+        const adminFields = [
+          "role",
+          "admin_access_level",
+          "status",
+          "security_questions",
+        ];
+        adminFields.forEach((field) => {
+          if (tempFormData[field] !== undefined) {
+            updateData[field] = tempFormData[field];
+          }
+        });
+        // Add updated_at timestamp
+        updateData.updated_at = new Date().toISOString();
       }
-      if (formData.email) {
-        localStorage.setItem('userEmail', formData.email);
-      }
-      
-      setUserData(formData);
-      setEditMode(false);
-      toast.success('Profile updated successfully!');
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      toast.error('There was a problem updating the profile. Please try again.');
+
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      // 5. Update state
+      setFormData((prev) => ({ ...prev, ...tempFormData }));
+      setProfileImage(newProfileImage);
+      setIsEditing(false);
+      setTempProfileImage(null);
+    } catch (error) {
+      console.error("Error updating profile:", error.message);
+      alert(`Error updating profile: ${error.message}`);
     } finally {
-      setSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const cancelEdit = () => {
-    setFormData(userData || {});
-    setEditMode(false);
-  };
-
-  if (loading) {
+  if (isLoading && !isEditing) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 p-4 rounded-lg text-red-600">
-        <p>{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-2 px-4 py-2 bg-red-100 hover:bg-red-200 rounded-md transition-colors"
-        >
-          Try Again
-        </button>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{
+              repeat: Infinity,
+              repeatType: "reverse",
+              duration: 1.5,
+              ease: "easeInOut",
+            }}
+            className="h-32 w-32 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full mb-4"
+          ></motion.div>
+          <div className="h-6 w-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded mb-2"></div>
+          <div className="h-4 w-48 bg-gradient-to-r from-indigo-200 to-purple-200 rounded"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto text-black">
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        {/* Profile Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row items-center">
-            <div className="bg-white p-2 rounded-full mb-4 sm:mb-0 sm:mr-6">
-              {identityData?.avatar_url ? (
-                <img 
-                  src={userData.avatar_url} 
-                  alt="Profile" 
-                  className="h-24 w-24 rounded-full object-cover" 
-                />
+    <div
+      ref={containerRef}
+      className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8 overflow-hidden"
+    >
+      {/* Floating bubbles background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{
+              x: Math.random() * 100,
+              y: Math.random() * 100,
+              scale: Math.random() * 0.5 + 0.5,
+              opacity: Math.random() * 0.3 + 0.1,
+            }}
+            animate={{
+              y: [0, Math.random() * 100 - 50],
+              x: [0, Math.random() * 100 - 50],
+            }}
+            transition={{
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              repeatType: "reverse",
+              ease: "easeInOut",
+            }}
+            className="absolute rounded-full bg-indigo-200"
+            style={{
+              width: `${Math.random() * 100 + 50}px`,
+              height: `${Math.random() * 100 + 50}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              filter: "blur(20px)",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-0">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden border border-white/20 transition-all duration-300 hover:shadow-2xl"
+        >
+          {/* Header with gradient background */}
+          <div className="relative h-32 sm:h-40 md:h-48 bg-gradient-to-r from-indigo-500 to-purple-600">
+            <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent"></div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={isEditing ? handleCancelEdit : handleEditStart}
+              className={`absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl ${
+                isEditing
+                  ? "bg-red-500 hover:bg-red-600"
+                  : "bg-white text-indigo-600 hover:bg-indigo-50"
+              } transition-all shadow-lg font-medium text-sm sm:text-base`}
+            >
+              {isEditing ? (
+                <>
+                  <X size={16} className="sm:w-4 sm:h-4" />
+                  <span>Cancel</span>
+                </>
               ) : (
-                <img 
-                  src={defaultUserImage} 
-                  alt="Default Profile" 
-                  className="h-24 w-24 rounded-full object-cover" 
-                />
+                <>
+                  <Edit3 size={16} className="sm:w-4 sm:h-4" />
+                  <span>Edit Profile</span>
+                </>
               )}
-            </div>
-            <div className="text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{userData?.fullname || 'User'}</h1>
-              <p className="text-blue-100 mt-1 capitalize">{userData?.role || userRole}</p>
-              {userData?.department && (
-                <p className="text-blue-100 mt-1">{userData.department}</p>
-              )}
-            </div>
-            {!editMode && (
-              <button 
-                onClick={() => setEditMode(true)}
-                className="mt-4 sm:mt-0 sm:ml-auto px-4 py-2 bg-white text-blue-600 rounded-md flex items-center hover:bg-blue-50 transition-colors"
-              >
-                <PencilSquareIcon className="h-5 w-5 mr-2" />
-                Edit Profile
-              </button>
-            )}
+            </motion.button>
           </div>
-        </div>
 
-        {/* Profile Content */}
-        {editMode ? (
-          <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-2">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="fullname" className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    type="text"
-                    id="fullname"
-                    name="fullname"
-                    value={formData.fullname || ''}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
+          {/* Profile content */}
+          <div className="px-4 sm:px-6 md:px-8 pb-8 md:pb-10">
+            {/* Profile picture and basic info */}
+            <div className="flex flex-col md:flex-row items-center md:items-start -mt-16 sm:-mt-20 md:-mt-24">
+              <motion.div
+                whileHover={isEditing ? { scale: 1.05 } : {}}
+                className="relative group"
+              >
+                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gradient-to-r from-indigo-100 to-purple-100">
+                  <img
+                    src={
+                      isEditing && tempProfileImage
+                        ? tempProfileImage
+                        : profileImage
+                        ? profileImage
+                        : "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png"
+                    }
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src =
+                        "https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png";
+                    }}
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email || ''}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="phonenumber" className="block text-sm font-medium text-gray-700">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phonenumber"
-                    name="phonenumber"
-                    value={formData.phonenumber || ''}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender</label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender || ''}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                {isEditing && (
+                  <motion.label
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                   >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    value={formData.address || ''}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  ></textarea>
-                </div>
-                
-                {/* Role-specific fields */}
-                {userRole === 'teacher' && (
-                  <>
-                    <div>
-                      <label htmlFor="subject_expertise" className="block text-sm font-medium text-gray-700">Subject Expertise</label>
-                      <input
-                        type="text"
-                        id="subject_expertise"
-                        name="subject_expertise"
-                        value={formData.subject_expertise || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
+                    <div className="text-white text-center p-2">
+                      <Upload size={20} className="mx-auto" />
+                      <span className="text-xs mt-1 block">Change Photo</span>
                     </div>
-                    <div>
-                      <label htmlFor="highest_qualification" className="block text-sm font-medium text-gray-700">Highest Qualification</label>
-                      <input
-                        type="text"
-                        id="highest_qualification"
-                        name="highest_qualification"
-                        value={formData.highest_qualification || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="experience" className="block text-sm font-medium text-gray-700">Experience (Years)</label>
-                      <input
-                        type="number"
-                        id="experience"
-                        name="experience"
-                        value={formData.experience || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="teaching_level" className="block text-sm font-medium text-gray-700">Teaching Level</label>
-                      <input
-                        type="text"
-                        id="teaching_level"
-                        name="teaching_level"
-                        value={formData.teaching_level || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
-                      <textarea
-                        id="bio"
-                        name="bio"
-                        value={formData.bio || ''}
-                        onChange={handleInputChange}
-                        rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      ></textarea>
-                    </div>
-                  </>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </motion.label>
                 )}
-                
-                {userRole === 'student' && (
-                  <>
-                    <div>
-                      <label htmlFor="std" className="block text-sm font-medium text-gray-700">Class/Standard</label>
-                      <input
-                        type="text"
-                        id="std"
-                        name="std"
-                        value={formData.std || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="roll_no" className="block text-sm font-medium text-gray-700">Roll Number</label>
-                      <input
-                        type="text"
-                        id="roll_no"
-                        name="roll_no"
-                        value={formData.roll_no || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="dob" className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                      <input
-                        type="date"
-                        id="dob"
-                        name="dob"
-                        value={formData.dob || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="parents_name" className="block text-sm font-medium text-gray-700">Parent's Name</label>
-                      <input
-                        type="text"
-                        id="parents_name"
-                        name="parents_name"
-                        value={formData.parents_name || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="parents_num" className="block text-sm font-medium text-gray-700">Parent's Phone Number</label>
-                      <input
-                        type="tel"
-                        id="parents_num"
-                        name="parents_num"
-                        value={formData.parents_num || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="previous_school" className="block text-sm font-medium text-gray-700">Previous School</label>
-                      <input
-                        type="text"
-                        id="previous_school"
-                        name="previous_school"
-                        value={formData.previous_school || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="stream" className="block text-sm font-medium text-gray-700">Stream</label>
-                      <input
-                        type="text"
-                        id="stream"
-                        name="stream"
-                        value={formData.stream || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {userRole === 'hod' && (
-                  <>
-                    <div>
-                      <label htmlFor="department_expertise" className="block text-sm font-medium text-gray-700">Department Expertise</label>
-                      <input
-                        type="text"
-                        id="department_expertise"
-                        name="department_expertise"
-                        value={formData.department_expertise || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="highest_qualification" className="block text-sm font-medium text-gray-700">Highest Qualification</label>
-                      <input
-                        type="text"
-                        id="highest_qualification"
-                        name="highest_qualification"
-                        value={formData.highest_qualification || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="experience" className="block text-sm font-medium text-gray-700">Experience (Years)</label>
-                      <input
-                        type="number"
-                        id="experience"
-                        name="experience"
-                        value={formData.experience || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="vision_department" className="block text-sm font-medium text-gray-700">Vision for Department</label>
-                      <textarea
-                        id="vision_department"
-                        name="vision_department"
-                        value={formData.vision_department || ''}
-                        onChange={handleInputChange}
-                        rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
+              </motion.div>
 
-                {userRole === 'admin' && (
-                  <>
-                    <div>
-                      <label htmlFor="admin_access_level" className="block text-sm font-medium text-gray-700">Admin Access Level</label>
-                      <select
-                        id="admin_access_level"
-                        name="admin_access_level"
-                        value={formData.admin_access_level || ''}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="">Select Access Level</option>
-                        <option value="full">Full Access</option>
-                        <option value="limited">Limited Access</option>
-                        <option value="read_only">Read Only</option>
-                      </select>
-                    </div>
-                  </>
-                )}
+              <div className="mt-4 md:mt-0 md:ml-6 lg:ml-8 text-center md:text-left w-full md:w-auto relative h-40 sm:h-48 md:h-32">
+                <motion.h1
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-2xl sm:text-3xl font-bold text-gray-900 sm:text-gray-900 md:text-gray-100 absolute top-0 left-0 right-0 md:left-auto md:right-auto md:relative md:top-auto"
+                >
+                  {formData.fullname || "Student Name"}
+                </motion.h1>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="inline-flex items-center px-3 py-1 bg-indigo-900 bg-opacity-10 rounded-full text-indigo-300 text-xs sm:text-sm font-medium absolute top-10 sm:top-12 md:top-5 left-0 right-0 md:left-auto md:right-auto md:relative"
+                >
+                  {userRole === "student" ? (
+                    <>
+                      <Book size={14} className="mr-1 sm:mr-2" />
+                      {`Class ${formData.std || "X"} - ${
+                        formData.stream || "Science"
+                      }`}
+                    </>
+                  ) : userRole === "teacher" ? (
+                    <>
+                      <Briefcase size={14} className="mr-1 sm:mr-2" />
+                      {`Subject: ${formData.subject || "Not assigned"}`}
+                    </>
+                  ) : userRole === "hod" ? (
+                    <>
+                      <BookOpen size={14} className="mr-1 sm:mr-2" />
+                      {`Department: ${formData.department || "Not assigned"}`}
+                    </>
+                  ) : (
+                    <>
+                      <Shield size={14} className="mr-1 sm:mr-2" />
+                      {`Admin`}
+                    </>
+                  )}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="inline-flex items-center px-3 py-1 bg-indigo-900 bg-opacity-10 rounded-full text-indigo-300 text-xs sm:text-sm font-medium absolute top-20 sm:top-24 md:top-12 left-0 right-0 md:left-auto md:right-auto md:relative mt-2"
+                >
+                  {userRole === "student" ? (
+                    <>
+                      <Award size={14} className="mr-1 sm:mr-2" />
+                      {`Roll No: ${formData.roll_no || "Not assigned"}`}
+                    </>
+                  ) : userRole === "teacher" ? (
+                    <>
+                      <Star size={14} className="mr-1 sm:mr-2" />
+                      {`Experience: ${formData.experience || "0"} years`}
+                    </>
+                  ) : userRole === "hod" ? (
+                    <>
+                      <Star size={14} className="mr-1 sm:mr-2" />
+                      {`Experience: ${formData.experience || "0"} years`}
+                    </>
+                  ) : (
+                    <>
+                      <Star size={14} className="mr-1 sm:mr-2" />
+                      {`Role: ${formData.role || "Administrator"}`}
+                    </>
+                  )}
+                </motion.div>
               </div>
             </div>
-            
-            <div className="mt-8 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
-                disabled={saving}
-              >
-                <XMarkIcon className="h-5 w-5 mr-2" />
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <div className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckIcon className="h-5 w-5 mr-2" />
-                    Save
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-2">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
-                {identityData && (
-                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                    <h3 className="text-md font-semibold text-blue-800 mb-2">Identity Provider Data</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {userData.fullname && (
-                        <div>
-                          <p className="text-sm text-gray-500">Full Name</p>
-                          <p className="text-gray-800 font-medium">{userData.fullname}</p>
-                        </div>
+
+            {/* Profile sections */}
+            <AnimatePresence mode="wait">
+              {!isEditing ? (
+                <motion.div
+                  key="view"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-8 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+                >
+                  {/* Professional/Academic Information */}
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-gray-200 flex items-center gap-2">
+                      {userRole === "student" ? (
+                        <>
+                          <Book size={18} className="text-indigo-500" />
+                          <span>Academic Information</span>
+                        </>
+                      ) : (
+                        <>
+                          <Briefcase size={18} className="text-indigo-500" />
+                          <span>Professional Information</span>
+                        </>
                       )}
-                      {userData.email && (
-                        <div>
-                          <p className="text-sm text-gray-500">Email</p>
-                          <p className="text-gray-800 font-medium">{userData.email}</p>
-                        </div>
+                    </h2>
+                    <div className="space-y-3 sm:space-y-4">
+                      {userRole === "student" && (
+                        <>
+                          <ProfileInfoItem
+                            icon={
+                              <Book size={16} className="text-indigo-500" />
+                            }
+                            label="Class"
+                            value={`Class ${formData.std || "Not specified"}`}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <School size={16} className="text-indigo-500" />
+                            }
+                            label="Stream"
+                            value={formData.stream || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Award size={16} className="text-indigo-500" />
+                            }
+                            label="Roll Number"
+                            value={formData.roll_no || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Calendar size={16} className="text-indigo-500" />
+                            }
+                            label="Previous School"
+                            value={formData.previous_school || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Shield size={16} className="text-indigo-500" />
+                            }
+                            label="Status"
+                            value={formData.status || "Not specified"}
+                          />
+                        </>
                       )}
-                      <div className="col-span-2">
-                        <p className="text-sm text-gray-500">Profile Picture</p>
-                        {userData.picture ? (
-                          <img 
-                            src={userData.picture} 
-                            alt="Profile" 
-                            className="h-16 w-16 rounded-full mt-1 border-2 border-blue-200 object-cover" 
+
+                      {userRole === "teacher" && (
+                        <>
+                          <ProfileInfoItem
+                            icon={
+                              <Book size={16} className="text-indigo-500" />
+                            }
+                            label="Subject Expertise"
+                            value={
+                              formData.subject_expertise || "Not specified"
+                            }
                           />
-                        ) : (
-                          <img 
-                            src={defaultUserImage} 
-                            alt="Default Profile" 
-                            className="h-16 w-16 rounded-full mt-1 border-2 border-blue-200 object-cover" 
+                          <ProfileInfoItem
+                            icon={
+                              <Star size={16} className="text-indigo-500" />
+                            }
+                            label="Experience"
+                            value={`${formData.experience || "0"} years`}
                           />
-                        )}
-                      </div>
+                          <ProfileInfoItem
+                            icon={
+                              <Calendar size={16} className="text-indigo-500" />
+                            }
+                            label="Teaching Level"
+                            value={formData.teaching_level || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Award size={16} className="text-indigo-500" />
+                            }
+                            label="Highest Qualification"
+                            value={
+                              formData.highest_qualification || "Not specified"
+                            }
+                          />
+          
+                        </>
+                      )}
+
+                      {userRole === "hod" && (
+                        <>
+                          <ProfileInfoItem
+                            icon={
+                              <BookOpen size={16} className="text-indigo-500" />
+                            }
+                            label="Department Expertise"
+                            value={
+                              formData.department_expertise || "Not specified"
+                            }
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Star size={16} className="text-indigo-500" />
+                            }
+                            label="Experience"
+                            value={`${formData.experience || "0"} years`}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Calendar size={16} className="text-indigo-500" />
+                            }
+                            label="Vision for Department"
+                            value={
+                              formData.vision_department || "Not specified"
+                            }
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Award size={16} className="text-indigo-500" />
+                            }
+                            label="Highest Qualification"
+                            value={
+                              formData.highest_qualification || "Not specified"
+                            }
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Shield size={16} className="text-indigo-500" />
+                            }
+                            label="Status"
+                            value={formData.status || "Not specified"}
+                          />
+                        </>
+                      )}
+
+                      {userRole === "admin" && (
+                        <>
+                          <ProfileInfoItem
+                            icon={
+                              <Shield size={16} className="text-indigo-500" />
+                            }
+                            label="Role"
+                            value={formData.role || "Administrator"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Shield size={16} className="text-indigo-500" />
+                            }
+                            label="Access Level"
+                            value={
+                              formData.admin_access_level || "Not specified"
+                            }
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Shield size={16} className="text-indigo-500" />
+                            }
+                            label="Status"
+                            value={formData.status || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Calendar size={16} className="text-indigo-500" />
+                            }
+                            label="Last Updated"
+                            value={formData.updated_at || "Not specified"}
+                          />
+                          <ProfileInfoItem
+                            icon={
+                              <Lock size={16} className="text-indigo-500" />
+                            }
+                            label="Security Questions"
+                            value={
+                              formData.security_questions ? "Set" : "Not set"
+                            }
+                          />
+                        </>
+                      )}
                     </div>
+                  </motion.div>
+
+                  {/* Personal Information */}
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-gray-200 flex items-center gap-2">
+                      <User size={18} className="text-indigo-500" />
+                      <span>Personal Information</span>
+                    </h2>
+                    <div className="space-y-3 sm:space-y-4">
+                      <ProfileInfoItem
+                        icon={<User size={16} className="text-indigo-500" />}
+                        label="Gender"
+                        value={formData.gender || "Not specified"}
+                      />
+                      <ProfileInfoItem
+                        icon={
+                          <Calendar size={16} className="text-indigo-500" />
+                        }
+                        label="Date of Birth"
+                        value={formData.dob || "Not specified"}
+                      />
+                      <ProfileInfoItem
+                        icon={<Mail size={16} className="text-indigo-500" />}
+                        label="Email"
+                        value={formData.email || "Not specified"}
+                      />
+                      <ProfileInfoItem
+                        icon={<Phone size={16} className="text-indigo-500" />}
+                        label="Phone"
+                        value={formData.phonenumber || "Not specified"}
+                      />
+                    </div>
+                  </motion.div>
+
+                  {/* Family Information - Only for Students */}
+                  {userRole === "student" && (
+                    <motion.div
+                      whileHover={{ y: -5 }}
+                      className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-gray-200 flex items-center gap-2">
+                        <Users size={18} className="text-indigo-500" />
+                        <span>Family Information</span>
+                      </h2>
+                      <div className="space-y-3 sm:space-y-4">
+                        <ProfileInfoItem
+                          icon={<User size={16} className="text-indigo-500" />}
+                          label="Parent's Name"
+                          value={formData.parents_name || "Not specified"}
+                        />
+                        <ProfileInfoItem
+                          icon={<Phone size={16} className="text-indigo-500" />}
+                          label="Parent's Contact"
+                          value={formData.parents_num || "Not specified"}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Additional Professional Details - For non-student roles */}
+                  {(userRole === "hod" || userRole === "admin") && (
+                    <motion.div
+                      whileHover={{ y: -5 }}
+                      className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-gray-200 flex items-center gap-2">
+                        <Briefcase size={18} className="text-indigo-500" />
+                        <span>Additional Details</span>
+                      </h2>
+                      <div className="space-y-3 sm:space-y-4">
+                        <ProfileInfoItem
+                          icon={<Award size={16} className="text-indigo-500" />}
+                          label="Specialization"
+                          value={formData.specialization || "Not specified"}
+                        />
+                        <ProfileInfoItem
+                          icon={<Star size={16} className="text-indigo-500" />}
+                          label="Achievements"
+                          value={formData.achievements || "Not specified"}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Contact Information */}
+                  {userRole === "student" && (
+                    <motion.div
+                      whileHover={{ y: -5 }}
+                      className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-gray-200 flex items-center gap-2">
+                        <Home size={18} className="text-indigo-500" />
+                        <span>Contact Information</span>
+                      </h2>
+                      <div className="space-y-3 sm:space-y-4">
+                        <ProfileInfoItem
+                          icon={<Home size={16} className="text-indigo-500" />}
+                          label="Address"
+                          value={formData.address || "Not specified"}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="edit"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  onSubmit={handleSubmit}
+                  className="mt-8 md:mt-12 space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Common fields for all roles */}
+                    <InputField
+                      label="Full Name"
+                      name="fullname"
+                      value={tempFormData.fullname || ""}
+                      onChange={handleInputChange}
+                      icon={<User size={16} className="text-indigo-500" />}
+                      required
+                    />
+                    <InputField
+                      label="Email"
+                      name="email"
+                      value={tempFormData.email || ""}
+                      onChange={handleInputChange}
+                      icon={<Mail size={16} className="text-indigo-500" />}
+                      type="email"
+                      required
+                    />
+                    <InputField
+                      label="Phone Number"
+                      name="phonenumber"
+                      value={tempFormData.phonenumber || ""}
+                      onChange={handleInputChange}
+                      icon={<Phone size={16} className="text-indigo-500" />}
+                      type="tel"
+                      limit={10}
+                      required={10}
+                    />
+                    <SelectField
+                      label="Gender"
+                      name="gender"
+                      value={tempFormData.gender || ""}
+                      onChange={handleInputChange}
+                      options={[
+                        { value: "", label: "Select Gender" },
+                        { value: "Male", label: "Male" },
+                        { value: "Female", label: "Female" },
+                        { value: "Other", label: "Other" },
+                        {
+                          value: "Prefer not to say",
+                          label: "Prefer not to say",
+                        },
+                      ]}
+                      icon={<User size={16} className="text-indigo-500" />}
+                    />
+
+                    {/* Student-specific fields */}
+                    {userRole === "student" && (
+                      <>
+                        <InputField
+                          label="Roll Number"
+                          name="roll_no"
+                          value={tempFormData.roll_no || ""}
+                          onChange={handleInputChange}
+                          icon={<Award size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Class"
+                          name="std"
+                          value={tempFormData.std || ""}
+                          onChange={handleInputChange}
+                          icon={<Book size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Stream"
+                          name="stream"
+                          value={tempFormData.stream || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <School size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Parent's Name"
+                          name="parents_name"
+                          value={tempFormData.parents_name || ""}
+                          onChange={handleInputChange}
+                          icon={<Users size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Parent's Contact"
+                          name="parents_num"
+                          value={tempFormData.parents_num || ""}
+                          onChange={handleInputChange}
+                          icon={<Phone size={16} className="text-indigo-500" />}
+                          type="tel"
+                        />
+                        <InputField
+                          label="Date of Birth"
+                          name="dob"
+                          type="date"
+                          value={tempFormData.dob || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <Calendar size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Previous School"
+                          name="previous_school"
+                          value={tempFormData.previous_school || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <School size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <SelectField
+                          label="Status"
+                          name="status"
+                          value={tempFormData.status || ""}
+                          onChange={handleInputChange}
+                          options={[
+                            { value: "", label: "Select Status" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                          ]}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                         <div>
+                    <label className="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <Home size={16} className="text-indigo-500" />
+                      <span>Address</span>
+                    </label>
+                    <textarea
+                      name="address"
+                      value={tempFormData.address || ""}
+                      onChange={handleInputChange}
+                      rows="3"
+                      className="block w-full rounded-xl bg-gray-50 border border-gray-300 text-gray-700 shadow-sm text-base sm:text-lg p-3 sm:p-4 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all placeholder-gray-400"
+                      placeholder="Enter your full address..."
+                    />
                   </div>
-                )}
-              </div>
-              
-              <div className="space-y-4">
-                
-                <div className="flex items-start">
-                  <PhoneIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Phone Number</p>
-                    <p className="text-gray-800 font-medium">{userData?.phonenumber || 'Not Available'}</p>
+                      </>
+                    )}
+
+                    {/* Teacher-specific fields */}
+                    {userRole === "teacher" && (
+                      <>
+                        <InputField
+                          label="Subject Expertise"
+                          name="subject_expertise"
+                          value={tempFormData.subject_expertise || ""}
+                          onChange={handleInputChange}
+                          icon={<Book size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Experience (years)"
+                          name="experience"
+                          type="number"
+                          value={tempFormData.experience || ""}
+                          onChange={handleInputChange}
+                          icon={<Star size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Teaching Level"
+                          name="teaching_level"
+                          value={tempFormData.teaching_level || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <Calendar size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Highest Qualification"
+                          name="highest_qualification"
+                          value={tempFormData.highest_qualification || ""}
+                          onChange={handleInputChange}
+                          icon={<Award size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Bio"
+                          name="bio"
+                          value={tempFormData.bio || ""}
+                          onChange={handleInputChange}
+                          icon={<Award size={16} className="text-indigo-500" />}
+                        />
+                        <SelectField
+                          label="Status"
+                          name="status"
+                          value={tempFormData.status || ""}
+                          onChange={handleInputChange}
+                          options={[
+                            { value: "", label: "Select Status" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                          ]}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                      </>
+                    )}
+
+                    {/* HOD-specific fields */}
+                    {userRole === "hod" && (
+                      <>
+                        <InputField
+                          label="Department Expertise"
+                          name="department_expertise"
+                          value={tempFormData.department_expertise || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <BookOpen size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Experience (years)"
+                          name="experience"
+                          type="number"
+                          value={tempFormData.experience || ""}
+                          onChange={handleInputChange}
+                          icon={<Star size={16} className="text-indigo-500" />}
+                        />
+                        <InputField
+                          label="Vision for Department"
+                          name="vision_department"
+                          value={tempFormData.vision_department || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <Calendar size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Highest Qualification"
+                          name="highest_qualification"
+                          value={tempFormData.highest_qualification || ""}
+                          onChange={handleInputChange}
+                          icon={<Award size={16} className="text-indigo-500" />}
+                        />
+                        <SelectField
+                          label="Status"
+                          name="status"
+                          value={tempFormData.status || ""}
+                          onChange={handleInputChange}
+                          options={[
+                            { value: "", label: "Select Status" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                          ]}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                      </>
+                    )}
+
+                    {/* Admin-specific fields */}
+                    {userRole === "admin" && (
+                      <>
+                        <InputField
+                          label="Role"
+                          name="role"
+                          value={tempFormData.role || ""}
+                          onChange={handleInputChange}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Access Level"
+                          name="admin_access_level"
+                          value={
+                            tempFormData.admin_access_level ||
+                            tempFormData.access_level ||
+                            ""
+                          }
+                          onChange={handleInputChange}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <SelectField
+                          label="Status"
+                          name="status"
+                          value={tempFormData.status || ""}
+                          onChange={handleInputChange}
+                          options={[
+                            { value: "", label: "Select Status" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                          ]}
+                          icon={
+                            <Shield size={16} className="text-indigo-500" />
+                          }
+                        />
+                        <InputField
+                          label="Security Questions"
+                          name="security_questions"
+                          value={tempFormData.security_questions || ""}
+                          onChange={handleInputChange}
+                          icon={<Lock size={16} className="text-indigo-500" />}
+                        />
+                      </>
+                    )}
                   </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <MapPinIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Address</p>
-                    <p className="text-gray-800 font-medium">{userData?.address || 'Not Available'}</p>
+
+                  <div className="flex justify-end">
+                    <motion.button
+                      type="submit"
+                      disabled={isLoading}
+                      whileHover={{ scale: isLoading ? 1 : 1.05 }}
+                      whileTap={{ scale: isLoading ? 1 : 0.95 }}
+                      className="flex items-center gap-2 px-6 py-2.5 sm:px-8 sm:py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl text-base sm:text-lg font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <motion.span
+                          animate={{ opacity: [0.6, 1, 0.6] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                        >
+                          Saving...
+                        </motion.span>
+                      ) : (
+                        <>
+                          <Save size={16} className="sm:w-4 sm:h-4" />
+                          <span>Save Changes</span>
+                        </>
+                      )}
+                    </motion.button>
                   </div>
-                </div>
-                
-                {/* Role-specific information */}
-                {userRole === 'teacher' && (
-                  <>
-                    <div className="flex items-start">
-                      <AcademicCapIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Subject Expertise</p>
-                        <p className="text-gray-800 font-medium">{userData?.subject_expertise || 'Not Available'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <AcademicCapIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Qualification</p>
-                        <p className="text-gray-800 font-medium">{userData?.qualification || 'Not Available'}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-                
-                {userRole === 'student' && (
-                  <>
-                    <div className="flex items-start">
-                      <AcademicCapIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Class</p>
-                        <p className="text-gray-800 font-medium">{userData?.std || 'Not Available'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <IdentificationIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Roll Number</p>
-                        <p className="text-gray-800 font-medium">{userData?.roll_no || 'Not Available'}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-                
-                {userRole === 'hod' && (
-                  <div className="flex items-start">
-                    <AcademicCapIcon className="h-6 w-6 text-gray-400 mr-3 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Department</p>
-                        <p className="text-gray-800 font-medium">{userData?.department || 'Not Available'}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
-        )}
+        </motion.div>
       </div>
     </div>
   );
 };
+
+const InputField = ({
+  label,
+  name,
+  value,
+  onChange,
+  disabled,
+  type = "text",
+  icon,
+  required = false,
+  ...props
+}) => (
+  <motion.div whileHover={{ y: -2 }} className="relative">
+    <label className="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2">
+      {icon}
+      <span>{label}</span>
+      {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {React.cloneElement(icon, { size: 16, className: "text-indigo-500" })}
+      </div>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        required={required}
+        className={`block w-full rounded-xl bg-gray-50 border border-gray-300 text-gray-700 shadow-sm text-base sm:text-lg p-3 sm:p-4 pl-10 sm:pl-12 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all ${
+          disabled ? "bg-gray-100 cursor-not-allowed" : ""
+        }`}
+        {...props}
+      />
+    </div>
+  </motion.div>
+);
+
+const SelectField = ({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  icon,
+  required = false,
+}) => (
+  <motion.div whileHover={{ y: -2 }} className="relative">
+    <label className="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2">
+      {icon}
+      <span>{label}</span>
+      {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {React.cloneElement(icon, { size: 16, className: "text-indigo-500" })}
+      </div>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className="block w-full rounded-xl bg-gray-50 border border-gray-300 text-gray-700 shadow-sm text-base sm:text-lg p-3 sm:p-4 pl-10 sm:pl-12 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-white">
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <svg
+          className="h-5 w-5 text-gray-400"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const ProfileInfoItem = ({ icon, label, value }) => (
+  <motion.div
+    whileHover={{ x: 5 }}
+    className="flex items-start gap-3 sm:gap-4 hover:bg-gray-50 p-2 sm:p-3 rounded-lg transition-colors"
+  >
+    <motion.div
+      whileHover={{ rotate: 10 }}
+      className="mt-1 p-1.5 sm:p-2 bg-indigo-100 rounded-lg text-indigo-500"
+    >
+      {React.cloneElement(icon, { size: 16 })}
+    </motion.div>
+    <div>
+      <p className="text-xs sm:text-sm text-gray-500">{label}</p>
+      <p className="text-base sm:text-lg font-medium text-gray-800">{value}</p>
+    </div>
+  </motion.div>
+);
 
 export default Profile;

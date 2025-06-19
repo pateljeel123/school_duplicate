@@ -64,6 +64,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/student-analytics`,
         },
+        {
+          name: 'AI Assistant',
+          icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/ai-assistant`,
+        }
       ];
     }
 

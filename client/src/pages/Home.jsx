@@ -1144,16 +1144,12 @@ const Home = () => {
                       123-4567
                     </motion.a>
                     <motion.a
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 text-gray-700 hover:text-bright-green transition-colors duration-300"
-                      whileHover={{ x: 3 }}
+                      className="flex items-center justify-center 
+                      text-gray-700 hover:text-bright-green transition-colors duration-300"
+                      whileHover={{ x: 3 }} 
                     >
-                      
-                        <FaMapMarkerAlt className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
-                        <span className="">
-                          100 Innovation Way, Tech City, TC 54321
-                        </span>
-                      
+                      <FaMapMarkerAlt className="text-bright-green mb-7 ml-5" /> +1 (800)
+                      100 Innovation Way, Tech City, TC 54321
                     </motion.a>
                   </div>
                 </motion.div>
