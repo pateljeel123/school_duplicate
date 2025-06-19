@@ -74,26 +74,6 @@ const About = () => {
             </div>
           </div>
         </section>
-
-        {/* Team Section */}
-        <section>
-          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Our Team</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map(member => (
-              <div key={member.id} className="card text-center">
-                <img 
-                  src={member.image} 
-                  alt={member.name} 
-                  className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
-                />
-                <h3 className="text-xl font-semibold">{member.name}</h3>
-                <p className="text-primary font-medium mb-2">{member.role}</p>
-                <p className="text-gray-600">{member.bio}</p>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   );

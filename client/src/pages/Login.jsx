@@ -151,11 +151,11 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen py-12 flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100">
+    <div className="min-h-screen py-12 flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 text-black">
       <div className="w-full max-w-md px-4">
         <div 
           className={`bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-500 ${animateForm ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-        >
+        > 
           <div className="bg-gradient-to-r from-primary to-indigo-600 py-6 px-6 relative">
             <div className="absolute top-0 left-0 w-full h-full opacity-20">
               {/* Abstract pattern overlay */}

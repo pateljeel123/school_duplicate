@@ -44,11 +44,7 @@ const Sidebar = ({ userRole, onLogout }) => {
         icon: <HomeIcon className="w-6 h-6" />,
         path: `/dashboard/${userRole}`,
       },
-      {
-        name: 'Profile',
-        icon: <UserCircleIcon className="w-6 h-6" />,
-        path: `/dashboard/${userRole}/profile`,
-      },
+      
     ];
     // For teacher role, show Lesson Planning and Student Analytics points
     if (userRole === 'teacher') {
@@ -63,6 +59,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           name: 'Analytics',
           icon: <ChartBarIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/student-analytics`,
+        },
+        {
+          name: 'Profile',
+          icon: <UserCircleIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/profile`,
         },
         {
           name: 'AI Assistant',
@@ -85,6 +86,11 @@ const Sidebar = ({ userRole, onLogout }) => {
           icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/ai-assistant`,
         },
+        {
+          name: 'Profile',
+          icon: <UserCircleIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/profile`,
+        },
       ],
       hod: [
         {
@@ -96,7 +102,12 @@ const Sidebar = ({ userRole, onLogout }) => {
           name: 'Teachers',
           icon: <UserGroupIcon className="w-6 h-6" />,
           path: '/dashboard/hod/teachers',
-        }
+        },
+        {
+          name: 'Profile',
+          icon: <UserCircleIcon className="w-6 h-6" />,
+          path: `/dashboard/${userRole}/profile`,
+        },
       ],
       admin: [
         {

@@ -186,9 +186,9 @@ const HeroSection = () => {
           >
             <button
               className="bg-gradient-to-r from-bright-green to-bright-green/80 text-white py-3 px-8 rounded-md hover:shadow-lg hover:shadow-bright-green/20 transition-all duration-300 flex items-center justify-center font-medium group"
-              onClick={() => navigate("/courses")}
+              onClick={() => navigate("/about")}
             >
-              Explore Courses{" "}
+              Explore Model{" "}
               <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
 
@@ -206,65 +206,51 @@ const HeroSection = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="w-full md:w-1/2 flex justify-center items-center z-10"
+          className="w-full md:w-1/2 flex justify-center items-center z-10 px-4 sm:px-6 md:px-0"
         >
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-md mx-auto">
             <div className="absolute -inset-1 bg-gradient-to-r from-bright-green to-accent rounded-xl blur-lg opacity-30 animate-pulse"></div>
-            <div className="relative bg-primary/40 backdrop-blur-md p-6 rounded-xl border border-white/10 shadow-xl">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
-                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
-                    <FaGraduationCap className="text-white text-xl" />
+            <div className="relative bg-primary/40 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-white/10 shadow-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaGraduationCap className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Learn</h3>
-                    <p className="text-white/70 text-sm">At your pace</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">Learn</h3>
+                    <p className="text-white/70 text-xs sm:text-sm">At your pace</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
-                  <div className="bg-gradient-to-br from-accent to-accent/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
-                    <FaBook className="text-white text-xl" />
+                <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-accent to-accent/70 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaBook className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Study</h3>
-                    <p className="text-white/70 text-sm">Smart content</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">Study</h3>
+                    <p className="text-white/70 text-xs sm:text-sm">Smart content</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
-                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
-                    <FaChalkboardTeacher className="text-white text-xl" />
+                <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-bright-green to-bright-green/70 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaChalkboardTeacher className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Teach</h3>
-                    <p className="text-white/70 text-sm">Share knowledge</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">Teach</h3>
+                    <p className="text-white/70 text-xs sm:text-sm">Share knowledge</p>
                   </div>
                 </div>
-                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
-                  <div className="bg-gradient-to-br from-accent to-accent/70 p-2 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-300">
-                    <FaUserGraduate className="text-white text-xl" />
+                <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
+                  <div className="bg-gradient-to-br from-accent to-accent/70 p-1.5 sm:p-2 rounded-lg mr-2 sm:mr-3 group-hover:scale-110 transition-transform duration-300">
+                    <FaUserGraduate className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Grow</h3>
-                    <p className="text-white/70 text-sm">Build skills</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">Grow</h3>
+                    <p className="text-white/70 text-xs sm:text-sm">Build skills</p>
                   </div>
                 </div>
               </div>
 
-              <motion.div
-                className="mt-4 p-3 bg-white/5 border border-white/10 rounded-lg text-center"
-                animate={{ y: [0, -5, 0] }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              >
-                <p className="text-white/80 text-sm">
-                  Join{" "}
-                  <span className="text-bright-green font-medium">10,000+</span>{" "}
-                  students already learning
-                </p>
-              </motion.div>
+             
             </div>
           </div>
         </motion.div>
@@ -309,49 +295,6 @@ const Home = () => {
     <div className="min-h-screen bg-white overflow-x-hidden font-body">
       {/* Hero Section */}
       <HeroSection />
-
-      {/* Stats Section */}
-      <section className="py-16 px-4 md:px-8 bg-white relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-primary">
-            Our <span className="text-bright-green">Impact</span> in Numbers
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
-              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FaUserGraduate className="text-bright-green text-xl" />
-              </div>
-              <h3 className="text-3xl font-bold text-primary mb-1">10K+</h3>
-              <p className="text-gray-600 text-sm">Students</p>
-            </div>
-
-            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
-              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FaChalkboardTeacher className="text-bright-green text-xl" />
-              </div>
-              <h3 className="text-3xl font-bold text-primary mb-1">500+</h3>
-              <p className="text-gray-600 text-sm">Teachers</p>
-            </div>
-
-            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
-              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FaBook className="text-bright-green text-xl" />
-              </div>
-              <h3 className="text-3xl font-bold text-primary mb-1">1,200+</h3>
-              <p className="text-gray-600 text-sm">Courses</p>
-            </div>
-
-            <div className="p-6 rounded-lg border border-gray-100 shadow-sm text-center hover:shadow-md transition-shadow duration-300">
-              <div className="bg-bright-green/10 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <FaStar className="text-bright-green text-xl" />
-              </div>
-              <h3 className="text-3xl font-bold text-primary mb-1">98%</h3>
-              <p className="text-gray-600 text-sm">Success Rate</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* The Old Way Is Broken Section */}
       <section className="py-16 px-4 md:px-8 bg-gray-50 relative overflow-hidden">
@@ -489,7 +432,7 @@ const Home = () => {
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">
               Meet Your{" "}
               <span className="text-bright-green">AI Co-Teachers</span> &
-              Student Assistants
+              <span className="text-bright-green">Student Assistants</span>
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Powerful AI support for both educators and learners
@@ -1013,12 +956,10 @@ const Home = () => {
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-                  <span className="font-bold">AK</span>
+             
                 </div>
                 <div>
-                  <h4 className="font-medium text-primary text-sm">
-                    Aisha Khan
-                  </h4>
+                  
                   <p className="text-gray-500 text-xs">Student</p>
                 </div>
               </div>
@@ -1039,12 +980,10 @@ const Home = () => {
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-                  <span className="font-bold">JM</span>
+          
                 </div>
                 <div>
-                  <h4 className="font-medium text-primary text-sm">
-                    John Miller
-                  </h4>
+                  
                   <p className="text-gray-500 text-xs">Parent</p>
                 </div>
               </div>
@@ -1065,12 +1004,10 @@ const Home = () => {
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-                  <span className="font-bold">LP</span>
+
                 </div>
                 <div>
-                  <h4 className="font-medium text-primary text-sm">
-                    Lisa Patel
-                  </h4>
+                 
                   <p className="text-gray-500 text-xs">Teacher</p>
                 </div>
               </div>
@@ -1128,28 +1065,26 @@ const Home = () => {
                   </h3>
                   <div className="space-y-3">
                     <motion.a
-                      href="mailto:info@aischool.com"
+                      href="mailto:info@deepnex.in"
                       className="flex items-center justify-center gap-2 text-gray-700 hover:text-bright-green transition-colors duration-300"
                       whileHover={{ x: 3 }}
                     >
                       <FaEnvelope className="text-bright-green" />{" "}
-                      contact@edunex.edu
+                      info@deepnex.in
                     </motion.a>
                     <motion.a
                       href="tel:+919876543210"
                       className="flex items-center justify-center gap-2 text-gray-700 hover:text-bright-green transition-colors duration-300"
                       whileHover={{ x: 3 }}
                     >
-                      <FaPhone className="text-bright-green" /> +1 (800)
-                      123-4567
+                      <FaPhone className="text-bright-green" /> +91 6355338791
                     </motion.a>
                     <motion.a
                       className="flex items-center justify-center 
                       text-gray-700 hover:text-bright-green transition-colors duration-300"
                       whileHover={{ x: 3 }} 
                     >
-                      <FaMapMarkerAlt className="text-bright-green mb-7 ml-5" /> +1 (800)
-                      100 Innovation Way, Tech City, TC 54321
+                      <FaMapMarkerAlt className="text-bright-green mb-7 ml-5" /> 31 M2, Madhuram Circle, Dindoli, Surat, Gujarat
                     </motion.a>
                   </div>
                 </motion.div>

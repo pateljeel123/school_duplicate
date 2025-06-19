@@ -43,11 +43,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/courses" className="text-gray-300 hover:text-bright-green transition-colors">
-                  Courses
-                </Link>
-              </li>
-              <li>
                 <Link to="/about" className="text-gray-300 hover:text-bright-green transition-colors">
                   About Us
                 </Link>
@@ -93,15 +88,15 @@ const Footer = () => {
             <ul className="space-y-3 font-body">
               <li className="flex items-start">
                 <FaEnvelope className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
-                <span className="text-gray-300">contact@edunex.edu</span>
+                <span className="text-gray-300">info@deepnex.in</span>
               </li>
               <li className="flex items-start">
                 <FaPhone className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
-                <span className="text-gray-300">+1 (800) 123-4567</span>
+                <span className="text-gray-300">+91 6355338791</span>
               </li>
               <li className="flex items-start">
                 <FaMapMarkerAlt className="w-5 h-5 mr-3 mt-0.5 text-bright-green" />
-                <span className="text-gray-300">100 Innovation Way, Tech City, TC 54321</span>
+                <span className="text-gray-300">31 M2, Madhuram Circle, Dindoli, Surat, Gujarat</span>
               </li>
             </ul>
           </div>
